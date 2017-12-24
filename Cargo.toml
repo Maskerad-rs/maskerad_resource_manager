@@ -1,0 +1,21 @@
+[package]
+name = "maskerad_resource_manager"
+version = "0.1.0"
+authors = ["Maskerad Developers - <maskerad-rs.organization@protonmail.com>"]
+description = "Maskerad game engine's resource manager"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/Maskerad-rs/maskerad_resource_manager"
+readme = "README_CRATE.md"
+keywords = ["game-engine", "resource-manager"]
+categories = ["game-engines"]
+
+[badges]
+
+appveyor = { repository = "Malkaviel/maskerad-resource-manager", branch = "master", service = "github" }
+travis-ci = { repository = "Maskerad-rs/Maskerad_resource_manager", branch = "master" }
+codecov = { repository = "Maskerad-rs/Maskerad_resource_manager", branch = "master", service = "github" }
+is-it-maintained-issue-resolution = { repository = "Maskerad-rs/maskerad_resource_manager" }
+is-it-maintained-open-issues = { repository = "Maskerad-rs/maskerad_resource_manager" }
+maintenance = { status = "actively-developed" }
+
+[dependencies]
