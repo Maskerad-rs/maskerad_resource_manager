@@ -19,7 +19,7 @@ is-it-maintained-open-issues = { repository = "Maskerad-rs/maskerad_resource_man
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-maskerad_stack_allocator = "~1.0.0"
+maskerad_memory_allocators = "~3.0.0"
 maskerad_object_pool = "~0.1.0"
 gltf = "~0.9.0"
 # The filesystem is not on crates.io for the moment.
