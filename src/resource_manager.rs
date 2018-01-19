@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use gltf::{Gltf, Glb};
 use maskerad_filesystem::filesystem::FileSystem;
 use maskerad_filesystem::game_directories::RootDir;
+use maskerad_filesystem::file_extension::FileExtension;
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 
 pub struct ResourceManager {
@@ -26,22 +27,56 @@ impl ResourceManager {
         }
     }
 
-    pub fn load_gltf(&mut self, root_dir: &RootDir, path: &str, file_system: &FileSystem) -> ResourceManagerResult<()> {
+    pub fn load_resource(&mut self, root_dir: &RootDir, path: &str, file_system: &FileSystem) -> ResourceManagerResult<()> {
         let full_path = file_system.get_absolute_path(root_dir, path)?;
-        let mut gltf_bufreader = file_system.open(root_dir, path)?;
-        let gltf_data = Gltf::from_reader(gltf_bufreader)?.validate_completely()?;
+        let bufreader = file_system.open(root_dir, path)?;
+        let file_extension = file_system.get_file_extension(path)?;
 
-        if let None = self.gltf_registry.get(&full_path) {
-            self.gltf_registry.insert(full_path, gltf_data);
+        match file_extension {
+            FileExtension::FLAC => {
+                unimplemented!()
+            },
+            FileExtension::OGG => {
+                unimplemented!()
+            },
+            FileExtension::TGA => {
+                unimplemented!()
+            },
+            FileExtension::GLTF => {
+                let gltf_data = Gltf::from_reader(bufreader)?.validate_completely()?;
+
+                if let None = self.gltf_registry.get(&full_path) {
+                    self.gltf_registry.insert(full_path, gltf_data);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn unload_resource(&mut self, root_dir: &RootDir, path: &str, file_system: &FileSystem) -> ResourceManagerResult<()> {
+        let full_path = file_system.get_absolute_path(root_dir, path)?;
+        let file_extension = file_system.get_file_extension(path)?;
+        match file_extension {
+            FileExtension::FLAC => {
+                unimplemented!()
+            },
+            FileExtension::OGG => {
+                unimplemented!()
+            },
+            FileExtension::TGA => {
+              unimplemented!()
+            },
+            FileExtension::GLTF => {
+                self.gltf_registry.remove(&full_path);
+            },
         }
 
         Ok(())
     }
 
     pub fn get_gltf_resource(&self, root_dir: &RootDir, path: &str, file_system: &FileSystem) -> ResourceManagerResult<&Gltf> {
-        let path = file_system.get_absolute_path(root_dir, path)?;
-
-        match self.gltf_registry.get(&path) {
+        match self.gltf_registry.get(&full_path) {
             Some(gltf_data) => {
                 Ok(gltf_data)
             },
@@ -50,6 +85,8 @@ impl ResourceManager {
             }
         }
     }
+
+    //TODO: a get_..._resource for all types. Stop with the trait object madness.
 }
 
 #[cfg(test)]
@@ -100,19 +137,23 @@ mod resource_manager_test {
     }
 
     #[test]
-    fn resource_manager_load_gltf_resource() {
+    fn resource_manager_get_gltf_resource() {
 
     }
 
     #[test]
-    fn resource_manager_load_ogg_flac_resource() {
+    fn resource_manager_get_ogg_flac_resource() {
 
     }
 
     #[test]
-    fn resource_manager_load_tga_resource() {
+    fn resource_manager_get_tga_resource() {
 
     }
 
+    #[test]
+    fn resource_manager_get_flac_resource() {
+
+    }
 
 }
