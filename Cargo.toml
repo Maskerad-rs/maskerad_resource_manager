@@ -8,6 +8,7 @@ repository = "https://github.com/Maskerad-rs/maskerad_resource_manager"
 readme = "README_CRATE.md"
 keywords = ["game-engine", "resource-manager"]
 categories = ["game-engines"]
+exclude = ["gltf_resource"]
 
 [badges]
 
@@ -19,8 +20,10 @@ is-it-maintained-open-issues = { repository = "Maskerad-rs/maskerad_resource_man
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-maskerad_memory_allocators = "~3.0.0"
+maskerad_memory_allocators = { git = "https://github.com/Maskerad-rs/maskerad_stack_allocator" }
 maskerad_object_pool = "~0.1.0"
 gltf = "~0.9.0"
 # The filesystem is not on crates.io for the moment.
 maskerad_filesystem = { git = "https://github.com/Maskerad-rs/maskerad_filesystem" }
+maskerad_data_parser = { git = "https://github.com/Maskerad-rs/maskerad_level_parser"}
+maskerad_gameobject_model = { git = "https://github.com/Maskerad-rs/maskerad_gameobject_model" }

@@ -8,11 +8,16 @@
 extern crate maskerad_object_pool;
 extern crate maskerad_memory_allocators;
 extern crate maskerad_filesystem;
+extern crate maskerad_data_parser;
+extern crate maskerad_gameobject_model;
 extern crate gltf;
 
 pub mod resource_manager;
-pub mod resource;
 mod resource_manager_errors;
+
+mod allocators;
+mod resources;
+mod properties;
 
 /*
     functionalities :

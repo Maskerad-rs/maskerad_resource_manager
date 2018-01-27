@@ -1,0 +1,5 @@
+title = '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/level2.toml'
+gameobjects = [
+    '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject4.toml',
+    '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject5.toml',
+]

@@ -9,6 +9,7 @@ use std::error::Error;
 use std::fmt;
 use maskerad_filesystem::filesystem_error::FileSystemError;
 use gltf::Error as GltfError;
+use maskerad_data_parser::data_parser_error::DataParserError;
 
 
 #[derive(Debug)]
@@ -16,6 +17,7 @@ pub enum ResourceManagerError {
     FilesystemError(String, FileSystemError),
     GltfError(String, GltfError),
     ResourceError(String),
+    ParsingError(String, DataParserError),
 }
 
 impl fmt::Display for ResourceManagerError {
@@ -29,7 +31,10 @@ impl fmt::Display for ResourceManagerError {
             },
             &ResourceManagerError::ResourceError(ref description) => {
                 write!(f, "Resource error: {}", description)
-            }
+            },
+            &ResourceManagerError::ParsingError(ref description, _) => {
+                write!(f, "Parsing error: {}", description)
+            },
         }
     }
 }
@@ -46,6 +51,9 @@ impl Error for ResourceManagerError {
             &ResourceManagerError::ResourceError(_) => {
                 "ResourceError"
             },
+            &ResourceManagerError::ParsingError(_, _) => {
+                "ParsingError"
+            }
         }
     }
 
@@ -59,6 +67,9 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::ResourceError(_) => {
                 None
+            },
+            &ResourceManagerError::ParsingError(_, ref parser_error) => {
+                Some(parser_error)
             },
         }
     }
@@ -75,6 +86,12 @@ impl From<FileSystemError> for ResourceManagerError {
 impl From<GltfError> for ResourceManagerError {
     fn from(error: GltfError) -> Self {
         ResourceManagerError::GltfError(format!("Error while dealing with a gltf structure."), error)
+    }
+}
+
+impl From<DataParserError> for ResourceManagerError {
+    fn from(error: DataParserError) -> Self {
+        ResourceManagerError::ParsingError(format!("Error while parsing a file."), error)
     }
 }
 
