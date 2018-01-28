@@ -55,7 +55,10 @@ impl ResourceManager {
             //a gameobject's mesh has an external resource -> gltf data.
             let mesh_option = gameobject_description.mesh();
             if let Some(ref mesh_desc) = *mesh_option {
-                vec.push(mesh_desc.path().to_path_buf());
+                //Don't allow doublons.
+                if !vec.contains(&mesh_desc.path().to_path_buf()) {
+                    vec.push(mesh_desc.path().to_path_buf());
+                }
             }
 
             //TODO: other resources
@@ -66,6 +69,7 @@ impl ResourceManager {
 
     //Second step.
     fn increment_refcounts(&mut self, path_new_resources: &[PathBuf]) {
+
         for path in path_new_resources.iter() {
             if !self.refcount_registry.has_refcount(path.as_path()) {
                 //Add the refcount of this resource
