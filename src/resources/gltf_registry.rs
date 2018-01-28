@@ -9,14 +9,20 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use gltf::Gltf;
 use std::rc::Rc;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 //TODO: not sure about that fucking shitty memory pool.
 //use maskerad_memory_allocators::smart_pointers::SharedPtr;
 
-pub struct GltfMap(HashMap<PathBuf, Rc<Gltf>>);
+pub struct GltfRegistry(HashMap<PathBuf, Rc<Gltf>>);
 
-impl Deref for GltfMap {
+impl GltfRegistry {
+    pub fn new() -> Self {
+        GltfRegistry(HashMap::new())
+    }
+}
+
+impl Deref for GltfRegistry {
     type Target = HashMap<PathBuf, Rc<Gltf>>;
 
     fn deref(&self) -> &Self::Target {
@@ -24,3 +30,8 @@ impl Deref for GltfMap {
     }
 }
 
+impl DerefMut for GltfRegistry {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}

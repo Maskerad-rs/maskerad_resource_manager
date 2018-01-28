@@ -13,12 +13,14 @@ use maskerad_filesystem::filesystem::FileSystem;
 use maskerad_filesystem::game_directories::RootDir;
 use maskerad_filesystem::file_extension::FileExtension;
 
-use maskerad_memory_allocators::{StackAllocator, StackAllocatorCopy};
-
 use maskerad_data_parser::level_description::LevelDescription;
 use maskerad_data_parser::gameobject_description::{GameObjectDescription};
 
-use properties_registry::PropertiesMap;
+use properties::PropertiesRegistry;
+use resources::ResourceRegistry;
+use refcount_registry::RefCountRegistry;
+
+use maskerad_gameobject_model::properties::transform::Transform;
 
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 //TODO: See if we can remove the RefCell.
@@ -29,125 +31,122 @@ pub struct ResourceManager {
     //A properties registry
     //An allocators registry
     //A refcount registry
-
-    gltf_registry: RefCell<HashMap<PathBuf, Gltf>>,
-    resource_ref_count: RefCell<HashMap<PathBuf, u8>>,
-    memory_allocator: StackAllocator,
-    copy_memory_allocator: StackAllocatorCopy,
-    properties_registry: PropertiesMap,
+    resource_registry: ResourceRegistry,
+    properties_registry: PropertiesRegistry,
+    refcount_registry: RefCountRegistry,
 }
 
 impl ResourceManager {
-    fn new(stack_size: usize, copy_stack_size: usize) -> Self {
+    fn new() -> Self {
         ResourceManager {
-            gltf_registry: RefCell::new(HashMap::new()),
-            resource_ref_count: RefCell::new(HashMap::new()),
-            memory_allocator: StackAllocator::with_capacity(stack_size),
-            copy_memory_allocator: StackAllocatorCopy::with_capacity(copy_stack_size),
-            properties_registry: PropertiesMap::new(),
+            resource_registry: ResourceRegistry::new(),
+            properties_registry: PropertiesRegistry::new(),
+            refcount_registry: RefCountRegistry::new(),
         }
     }
 
+    //First step.
+    fn read_needed_resources(&self, gameobject_descriptions: &[GameObjectDescription]) -> Vec<PathBuf> {
+        let mut vec = Vec::new();
+
+        for gameobject_description in gameobject_descriptions.iter() {
+
+            //MESH
+            //a gameobject's mesh has an external resource -> gltf data.
+            let mesh_option = gameobject_description.mesh();
+            if let Some(ref mesh_desc) = *mesh_option {
+                vec.push(mesh_desc.path().to_path_buf());
+            }
+
+            //TODO: other resources
+        }
+
+        vec
+    }
+
+    //Second step.
+    fn increment_refcounts(&mut self, path_new_resources: &[PathBuf]) {
+        for path in path_new_resources.iter() {
+            if !self.refcount_registry.has_refcount(path.as_path()) {
+                //Add the refcount of this resource
+                self.refcount_registry.add_refcount(path.as_path());
+            } else {
+                //increment the refcount of this resource
+                self.refcount_registry.increment_refcount_of(path.as_path());
+            }
+        }
+    }
+
+    //Third step.
+    fn decrement_refcounts(&mut self, resources_to_decrease: &[PathBuf]) {
+        for path in resources_to_decrease.iter() {
+            self.refcount_registry.decrement_refcount_of(path.as_path());
+        }
+    }
+
+    //Fourth step.
+    fn unload_resources(&mut self, resources_to_unload: &[PathBuf], file_system: &FileSystem) -> ResourceManagerResult<()> {
+        for path in resources_to_unload.iter() {
+            self.unload_resource(path.as_path(), file_system)?;
+        }
+        Ok(())
+    }
+
+    //Fifth step.
+    fn load_resources(&mut self, resources_to_load: &[PathBuf], file_system: &FileSystem) -> ResourceManagerResult<()> {
+        for path in resources_to_load.iter() {
+            self.load_resource(path.as_path(), file_system)?;
+        }
+        Ok(())
+    }
 
     //Doesn't actually "create" the level, we just load all the needed resources for all the objects inside the level.
-    pub fn load_level_resources(&self, level_description: &LevelDescription, file_system: &FileSystem) -> ResourceManagerResult<()> {
+    pub fn load_level_resources(&mut self, level_description: &LevelDescription, file_system: &FileSystem) -> ResourceManagerResult<()> {
         /*
         When loading level :
-        1 - read all needed resources and increment their ref count by one.
-        2 - then decrement the ref count of each unneeded resources.
-        3 - if a ref count drop to 0, unload the resource.
-        4 - load all the other resources and place them in the right memory allocator.
+        1 - read all needed resources.
+        2 - Increment the ref count of all those resources, and add them if they don't exist.
+        3 - then decrement the ref count of each unneeded resources.
+        4 - if a ref count drop to 0, unload the resource.
+        5 - load all the other resources and place them in the right memory allocator.
         */
 
-        //read the level file
-        let mut content = String::new();
-
-        for paths in level_description.gameobject_description_paths().iter() {
-            content.clear();
-            let mut reader = file_system.open(paths.as_ref())?;
-            file_system.read_to_string(&mut reader, &mut content)?;
-
-            let go_desc = GameObjectDescription::load_from_toml(content.as_str())?;
-
-            //TODO: paths to all needed resources of the game object
-            //1 - get the needed resources
-            let mut new_paths = Vec::new();
-            let mesh_path = PathBuf::from("test");
-            new_paths.push(mesh_path.clone());
+        //Generate all the gameobject descriptions
+        let gameobject_descriptions = level_description.generate_gameobject_descriptions(file_system)?;
+        let path_new_resources = self.read_needed_resources(&gameobject_descriptions);
+        self.increment_refcounts(&path_new_resources);
 
 
 
+        let resources_to_decrease = self.refcount_registry.iter().filter(|elem| {
+            !path_new_resources.contains(elem.0)
+        }).map(|elem| {
+            elem.0
+        }).cloned().collect::<Vec<PathBuf>>();
+        self.decrement_refcounts(&resources_to_decrease);
 
 
 
-            //increment the ref count by one
-            for new_resource_path in new_paths.iter() {
-                if let Some(ref_count) = self.resource_ref_count.borrow_mut().get_mut(new_resource_path) {
-                    *ref_count += 1;
-                } else {
-                    self.resource_ref_count.borrow_mut().insert(new_resource_path.clone(), 1);
-                }
-            }
+        let resources_to_unload = self.refcount_registry.iter().filter(|elem| {
+            (*elem.1) == 0
+        }).map(|elem| {
+            elem.0
+        }).cloned().collect::<Vec<PathBuf>>();
+        self.unload_resources(&resources_to_unload, file_system)?;
 
 
 
-
-
-
-            //2 - decrement unneeded resources
-            let resources_to_decrease = self.resource_ref_count.borrow_mut().iter_mut().filter(|elem| {
-                !new_paths.contains(elem.0)
-            }).map(|elem| {
-                elem.0
-            }).cloned().collect::<Vec<PathBuf>>();
-
-            for pathbufs in resources_to_decrease.into_iter() {
-                if let Some(ref_count) = self.resource_ref_count.borrow_mut().get_mut(&pathbufs) {
-                    *ref_count -= 1;
-                }
-            }
-
-
-
-
-
-
-
-            //3 - unload resources with a ref count of 0.
-            let resources_to_unload = self.resource_ref_count.borrow().iter().filter(|elem| {
-                (*elem.1) == 0
-            }).map(|elem| {
-                elem.0
-            }).cloned().collect::<Vec<PathBuf>>();
-
-            for pathbufs in resources_to_unload.into_iter() {
-                self.unload_resource(pathbufs.as_path(), file_system)?;
-            }
-
-
-
-
-
-
-
-
-            //4 - load all the needed resources (only the new with a ref count of 1, other are already loaded).
-            let resources_to_load = self.resource_ref_count.borrow().iter().filter(|elem| {
-                (*elem.1) == 1
-            }).map(|elem| {
-                elem.0
-            }).cloned().collect::<Vec<PathBuf>>();
-
-            for pathbufs in resources_to_load.into_iter() {
-                self.load_resource(pathbufs.as_path(), file_system).unwrap();
-            }
-
-        }
+        let resources_to_load = self.refcount_registry.iter().filter(|elem| {
+            (*elem.1) == 1
+        }).map(|elem| {
+            elem.0
+        }).cloned().collect::<Vec<PathBuf>>();
+        self.load_resources(&resources_to_load, file_system)?;
 
         Ok(())
     }
 
-    pub fn load_resource(&self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
+    pub fn load_resource(&mut self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
         let bufreader = file_system.open(path)?;
         let file_extension = file_system.get_file_extension(path)?;
 
@@ -163,11 +162,7 @@ impl ResourceManager {
             },
             FileExtension::GLTF => {
                 let gltf_data = Gltf::from_reader(bufreader)?.validate_completely()?;
-                //TODO: the registry take ptr/ref to data as values, he doesn't take ownership of it.
-
-                if let None = self.gltf_registry.borrow().get(path) {
-                    self.gltf_registry.borrow_mut().insert(path.to_path_buf(), gltf_data);
-                }
+                self.resource_registry.add_gltf(path, gltf_data);
             },
             FileExtension::TOML => {
                 return Err(ResourceManagerError::ResourceError(format!("TOML files are not valid resources to load !")));
@@ -177,7 +172,7 @@ impl ResourceManager {
         Ok(())
     }
 
-    pub fn unload_resource(&self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
+    pub fn unload_resource(&mut self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
         let file_extension = file_system.get_file_extension(path)?;
         match file_extension {
             FileExtension::FLAC => {
@@ -190,7 +185,7 @@ impl ResourceManager {
               unimplemented!()
             },
             FileExtension::GLTF => {
-                self.gltf_registry.borrow_mut().remove(path);
+                self.resource_registry.remove_gltf(path);
             },
             FileExtension::TOML => {
                 return Err(ResourceManagerError::ResourceError(format!("TOML files are not valid resources to unload! ")));

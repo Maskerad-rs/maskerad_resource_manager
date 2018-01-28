@@ -6,15 +6,27 @@
 // copied, modified, or distributed except according to those terms.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::ops::{Deref, DerefMut};
 use maskerad_gameobject_model::properties::transform::Transform;
 
-pub struct TransformRegistry(HashMap<PathBuf, Transform>);
+pub struct TransformRegistry(HashMap<String, Transform>);
+
+impl TransformRegistry {
+    pub fn new() -> Self {
+        TransformRegistry(HashMap::new())
+    }
+}
 
 impl Deref for TransformRegistry {
-    type Target = HashMap<PathBuf, Transform>;
+    type Target = HashMap<String, Transform>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for TransformRegistry {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

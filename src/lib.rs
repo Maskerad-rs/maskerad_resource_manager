@@ -14,7 +14,7 @@ extern crate gltf;
 
 pub mod resource_manager;
 mod resource_manager_errors;
-
+mod refcount_registry;
 mod allocators;
 mod resources;
 mod properties;
