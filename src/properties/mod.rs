@@ -75,6 +75,14 @@ impl PropertiesRegistry {
     pub fn has_transform(&self, gameobject_id: &str) -> bool {
         self.transform_registry.get(gameobject_id).is_some()
     }
+
+    pub fn is_transform_empty(&self) -> bool {
+        self.transform_registry.is_empty()
+    }
+
+    pub fn is_mesh_empty(&self) -> bool {
+        self.mesh_registry.is_empty()
+    }
 }
 
 mod transform_registry;

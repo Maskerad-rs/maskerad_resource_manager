@@ -22,6 +22,7 @@ impl ResourceRegistry {
         }
     }
 
+    //____________________GLTF____________________________
     pub fn get_gltf(&self, path: &Path) -> ResourceManagerResult<Rc<Gltf>> {
         match self.gltf_registry.get(path) {
             Some(gltf) => {
@@ -45,9 +46,15 @@ impl ResourceRegistry {
         self.gltf_registry.get(path).is_some()
     }
 
-    pub fn gltf_registry(&self) -> &GltfRegistry {
-        &self.gltf_registry
+    pub fn is_gltf_empty(&self) -> bool {
+        self.gltf_registry.is_empty()
     }
+
+    //_________________________FLAC_____________________
+
+    //_________________________OGG______________________
+
+    //__________________________TGA_____________________
 }
 
 mod gltf_registry;

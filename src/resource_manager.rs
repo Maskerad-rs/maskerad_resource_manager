@@ -207,8 +207,9 @@ mod resource_manager_test {
     #[test]
     fn resource_manager_creation() {
         let resource_manager = ResourceManager::new();
-        assert!(resource_manager.registry.is_empty());
-        assert!(resource_manager.resource_ref_count.is_empty());
+        assert!(resource_manager.properties_registry.is_mesh_empty());
+        assert!(resource_manager.properties_registry.is_transform_empty());
+        assert!(resource_manager.resource_registry.is_gltf_empty());
     }
 
     #[test]
@@ -253,7 +254,7 @@ mod resource_manager_test {
     }
 
     #[test]
-    fn resource_manager_get_ogg_flac_resource() {
+    fn resource_manager_get_ogg_resource() {
 
     }
 
