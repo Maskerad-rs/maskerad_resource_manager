@@ -12,12 +12,15 @@ use std::rc::Rc;
 use gltf::Gltf;
 use resources::flac_registry::FlacRegistry;
 use claxon::FlacReader;
+use lewton::inside_ogg::OggStreamReader;
 use std::io::{Read, BufReader};
 use std::fs::File;
+use resources::ogg_registry::OggRegistry;
 
 pub struct ResourceRegistry {
     gltf_registry: GltfRegistry,
     flac_registry: FlacRegistry,
+    ogg_registry: OggRegistry,
 }
 
 impl ResourceRegistry {
@@ -25,7 +28,7 @@ impl ResourceRegistry {
         ResourceRegistry {
             gltf_registry: GltfRegistry::new(),
             flac_registry: FlacRegistry::new(),
-
+            ogg_registry: OggRegistry::new(),
         }
     }
 
@@ -85,6 +88,32 @@ impl ResourceRegistry {
         self.flac_registry.is_empty()
     }
     //_________________________OGG______________________
+    pub fn get_ogg(&self, path: &Path) -> ResourceManagerResult<Rc<OggStreamReader<BufReader<File>>>> {
+        match self.ogg_registry.get(path) {
+            Some(ogg) => {
+                Ok(ogg.clone())
+            },
+            None => {
+                Err(ResourceManagerError::ResourceError(format!("Could not find the ogg data at path {:?} in the ogg registry !", path)))
+            },
+        }
+    }
+
+    pub fn add_ogg(&mut self, path: &Path, ogg_resource: OggStreamReader<BufReader<File>>) {
+        self.ogg_registry.insert(path.to_path_buf(), Rc::new(ogg_resource));
+    }
+
+    pub fn remove_ogg(&mut self, path: &Path) {
+        self.ogg_registry.remove(path);
+    }
+
+    pub fn has_ogg(&self, path: &Path) -> bool {
+        self.ogg_registry.get(path).is_some()
+    }
+
+    pub fn is_ogg_empty(&self) -> bool {
+        self.ogg_registry.is_empty()
+    }
 
     //__________________________TGA_____________________
 }

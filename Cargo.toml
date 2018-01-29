@@ -22,8 +22,12 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 maskerad_memory_allocators = { git = "https://github.com/Maskerad-rs/maskerad_stack_allocator" }
 maskerad_object_pool = "^0.1.0"
+#gltf stuff
 gltf = "^0.9.0"
+#flac stuff
 claxon = "^0.4.0"
+#ogg stuff
+lewton = "^0.7.0"
 
 # The filesystem is not on crates.io for the moment.
 maskerad_filesystem = { git = "https://github.com/Maskerad-rs/maskerad_filesystem" }

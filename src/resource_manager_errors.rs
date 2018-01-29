@@ -11,6 +11,7 @@ use maskerad_filesystem::filesystem_error::FileSystemError;
 use gltf::Error as GltfError;
 use maskerad_data_parser::data_parser_error::DataParserError;
 use claxon::Error as FlacError;
+use lewton::VorbisError as OggError;
 
 
 #[derive(Debug)]
@@ -20,6 +21,7 @@ pub enum ResourceManagerError {
     ResourceError(String),
     ParsingError(String, DataParserError),
     FlacError(String, FlacError),
+    OggError(String, OggError),
 }
 
 impl fmt::Display for ResourceManagerError {
@@ -39,7 +41,10 @@ impl fmt::Display for ResourceManagerError {
             },
             &ResourceManagerError::FlacError(ref description, _) => {
                 write!(f, "Flac error: {}", description)
-            }
+            },
+            &ResourceManagerError::OggError(ref description, _) => {
+                write!(f, "Ogg error: {}", description)
+            },
         }
     }
 }
@@ -62,6 +67,9 @@ impl Error for ResourceManagerError {
             &ResourceManagerError::FlacError(_, _) => {
                 "FlacError"
             },
+            &ResourceManagerError::OggError(_, _) => {
+                "OggError"
+            },
         }
     }
 
@@ -81,6 +89,9 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::FlacError(_, ref flac_error) => {
                 Some(flac_error)
+            },
+            &ResourceManagerError::OggError(_, ref ogg_error) => {
+                Some(ogg_error)
             },
         }
     }
@@ -112,4 +123,8 @@ impl From<FlacError> for ResourceManagerError {
     }
 }
 
-
+impl From<OggError> for ResourceManagerError {
+    fn from(error: OggError) -> Self {
+        ResourceManagerError::OggError(format!("Error while dealing with an ogg structure."), error)
+    }
+}

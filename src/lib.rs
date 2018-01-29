@@ -12,6 +12,7 @@ extern crate maskerad_data_parser;
 extern crate maskerad_gameobject_model;
 extern crate gltf;
 extern crate claxon;
+extern crate lewton;
 
 pub mod resource_manager;
 mod resource_manager_errors;

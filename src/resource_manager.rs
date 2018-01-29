@@ -11,6 +11,7 @@ use gltf::{Gltf, Glb};
 use claxon::FlacReader;
 use std::io::Read;
 use std::io::BufReader;
+use lewton::inside_ogg::OggStreamReader;
 
 use maskerad_filesystem::filesystem::FileSystem;
 use maskerad_filesystem::game_directories::RootDir;
@@ -164,7 +165,8 @@ impl ResourceManager {
                 self.resource_registry.add_flac(path, flac_reader);
             },
             FileExtension::OGG => {
-                unimplemented!()
+                let ogg_reader = OggStreamReader::new(bufreader)?;
+                self.resource_registry.add_ogg(path, ogg_reader);
             },
             FileExtension::TGA => {
                 unimplemented!()
