@@ -10,6 +10,7 @@ use std::fmt;
 use maskerad_filesystem::filesystem_error::FileSystemError;
 use gltf::Error as GltfError;
 use maskerad_data_parser::data_parser_error::DataParserError;
+use claxon::Error as FlacError;
 
 
 #[derive(Debug)]
@@ -18,6 +19,7 @@ pub enum ResourceManagerError {
     GltfError(String, GltfError),
     ResourceError(String),
     ParsingError(String, DataParserError),
+    FlacError(String, FlacError),
 }
 
 impl fmt::Display for ResourceManagerError {
@@ -35,6 +37,9 @@ impl fmt::Display for ResourceManagerError {
             &ResourceManagerError::ParsingError(ref description, _) => {
                 write!(f, "Parsing error: {}", description)
             },
+            &ResourceManagerError::FlacError(ref description, _) => {
+                write!(f, "Flac error: {}", description)
+            }
         }
     }
 }
@@ -53,7 +58,10 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::ParsingError(_, _) => {
                 "ParsingError"
-            }
+            },
+            &ResourceManagerError::FlacError(_, _) => {
+                "FlacError"
+            },
         }
     }
 
@@ -70,6 +78,9 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::ParsingError(_, ref parser_error) => {
                 Some(parser_error)
+            },
+            &ResourceManagerError::FlacError(_, ref flac_error) => {
+                Some(flac_error)
             },
         }
     }
@@ -95,5 +106,10 @@ impl From<DataParserError> for ResourceManagerError {
     }
 }
 
+impl From<FlacError> for ResourceManagerError {
+    fn from(error: FlacError) -> Self {
+        ResourceManagerError::FlacError(format!("Error while dealing with a flac structure."), error)
+    }
+}
 
 

@@ -8,6 +8,9 @@
 use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use gltf::{Gltf, Glb};
+use claxon::FlacReader;
+use std::io::Read;
+use std::io::BufReader;
 
 use maskerad_filesystem::filesystem::FileSystem;
 use maskerad_filesystem::game_directories::RootDir;
@@ -150,13 +153,15 @@ impl ResourceManager {
         Ok(())
     }
 
+    //TODO: The filesystem should stay outside of those functions, the fs should give the resource to those functions.
     pub fn load_resource(&mut self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
         let bufreader = file_system.open(path)?;
         let file_extension = file_system.get_file_extension(path)?;
 
         match file_extension {
             FileExtension::FLAC => {
-                unimplemented!()
+                let flac_reader = FlacReader::new(bufreader)?;
+                self.resource_registry.add_flac(path, flac_reader);
             },
             FileExtension::OGG => {
                 unimplemented!()
@@ -180,7 +185,7 @@ impl ResourceManager {
         let file_extension = file_system.get_file_extension(path)?;
         match file_extension {
             FileExtension::FLAC => {
-                unimplemented!()
+                self.resource_registry.remove_flac(path);
             },
             FileExtension::OGG => {
                 unimplemented!()

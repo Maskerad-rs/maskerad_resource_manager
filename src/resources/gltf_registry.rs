@@ -11,8 +11,7 @@ use gltf::Gltf;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
-//TODO: not sure about that fucking shitty memory pool.
-//use maskerad_memory_allocators::smart_pointers::SharedPtr;
+//TODO:Custom allocators if possible
 
 pub struct GltfRegistry(HashMap<PathBuf, Rc<Gltf>>);
 
