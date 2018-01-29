@@ -13,6 +13,10 @@ use std::io::Read;
 use std::io::BufReader;
 use lewton::inside_ogg::OggStreamReader;
 
+use imagefmt::Image;
+use imagefmt::tga;
+use imagefmt::ColFmt;
+
 use maskerad_filesystem::filesystem::FileSystem;
 use maskerad_filesystem::game_directories::RootDir;
 use maskerad_filesystem::file_extension::FileExtension;
@@ -156,7 +160,7 @@ impl ResourceManager {
 
     //TODO: The filesystem should stay outside of those functions, the fs should give the resource to those functions.
     pub fn load_resource(&mut self, path: &Path, file_system: &FileSystem) -> ResourceManagerResult<()> {
-        let bufreader = file_system.open(path)?;
+        let mut bufreader = file_system.open(path)?;
         let file_extension = file_system.get_file_extension(path)?;
 
         match file_extension {
@@ -169,7 +173,8 @@ impl ResourceManager {
                 self.resource_registry.add_ogg(path, ogg_reader);
             },
             FileExtension::TGA => {
-                unimplemented!()
+                let tga_image = tga::read(&mut bufreader, ColFmt::Auto)?;
+                self.resource_registry.add_tga(path, tga_image);
             },
             FileExtension::GLTF => {
                 let gltf_data = Gltf::from_reader(bufreader)?.validate_completely()?;
@@ -190,10 +195,10 @@ impl ResourceManager {
                 self.resource_registry.remove_flac(path);
             },
             FileExtension::OGG => {
-                unimplemented!()
+                self.resource_registry.remove_ogg(path);
             },
             FileExtension::TGA => {
-              unimplemented!()
+              self.resource_registry.remove_tga(path);
             },
             FileExtension::GLTF => {
                 self.resource_registry.remove_gltf(path);

@@ -12,6 +12,7 @@ use gltf::Error as GltfError;
 use maskerad_data_parser::data_parser_error::DataParserError;
 use claxon::Error as FlacError;
 use lewton::VorbisError as OggError;
+use imagefmt::Error as ImageError;
 
 
 #[derive(Debug)]
@@ -22,6 +23,7 @@ pub enum ResourceManagerError {
     ParsingError(String, DataParserError),
     FlacError(String, FlacError),
     OggError(String, OggError),
+    ImageError(String, ImageError),
 }
 
 impl fmt::Display for ResourceManagerError {
@@ -44,6 +46,9 @@ impl fmt::Display for ResourceManagerError {
             },
             &ResourceManagerError::OggError(ref description, _) => {
                 write!(f, "Ogg error: {}", description)
+            },
+            &ResourceManagerError::ImageError(ref description, _) => {
+                write!(f, "Image error: {}", description)
             },
         }
     }
@@ -70,6 +75,9 @@ impl Error for ResourceManagerError {
             &ResourceManagerError::OggError(_, _) => {
                 "OggError"
             },
+            &ResourceManagerError::ImageError(_, _) => {
+                "ImageError"
+            },
         }
     }
 
@@ -92,6 +100,9 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::OggError(_, ref ogg_error) => {
                 Some(ogg_error)
+            },
+            &ResourceManagerError::ImageError(_, ref image_error) => {
+                Some(image_error)
             },
         }
     }
@@ -126,5 +137,11 @@ impl From<FlacError> for ResourceManagerError {
 impl From<OggError> for ResourceManagerError {
     fn from(error: OggError) -> Self {
         ResourceManagerError::OggError(format!("Error while dealing with an ogg structure."), error)
+    }
+}
+
+impl From<ImageError> for ResourceManagerError {
+    fn from(error: ImageError) -> Self {
+        ResourceManagerError::ImageError(format!("Error while dealing with an image structure."), error)
     }
 }

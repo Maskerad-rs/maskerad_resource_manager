@@ -6,3 +6,36 @@
 // copied, modified, or distributed except according to those terms.
 
 //TODO:Custom allocators if possible
+
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use imagefmt::Image;
+use std::rc::Rc;
+use std::ops::{Deref, DerefMut};
+
+use std::io::BufReader;
+use std::fs::File;
+
+use std::io::Read;
+
+pub struct TgaRegistry(HashMap<PathBuf, Rc<Image<u8>>>);
+
+impl TgaRegistry {
+    pub fn new() -> Self {
+        TgaRegistry(HashMap::new())
+    }
+}
+
+impl Deref for TgaRegistry {
+    type Target = HashMap<PathBuf, Rc<Image<u8>>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for TgaRegistry {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}

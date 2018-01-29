@@ -28,6 +28,8 @@ gltf = "^0.9.0"
 claxon = "^0.4.0"
 #ogg stuff
 lewton = "^0.7.0"
+#tga stuff
+imagefmt = "^4.0.0"
 
 # The filesystem is not on crates.io for the moment.
 maskerad_filesystem = { git = "https://github.com/Maskerad-rs/maskerad_filesystem" }

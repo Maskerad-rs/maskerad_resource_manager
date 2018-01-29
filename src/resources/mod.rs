@@ -16,11 +16,14 @@ use lewton::inside_ogg::OggStreamReader;
 use std::io::{Read, BufReader};
 use std::fs::File;
 use resources::ogg_registry::OggRegistry;
+use resources::tga_registry::TgaRegistry;
+use imagefmt::Image;
 
 pub struct ResourceRegistry {
     gltf_registry: GltfRegistry,
     flac_registry: FlacRegistry,
     ogg_registry: OggRegistry,
+    tga_registry: TgaRegistry,
 }
 
 impl ResourceRegistry {
@@ -29,6 +32,7 @@ impl ResourceRegistry {
             gltf_registry: GltfRegistry::new(),
             flac_registry: FlacRegistry::new(),
             ogg_registry: OggRegistry::new(),
+            tga_registry: TgaRegistry::new(),
         }
     }
 
@@ -116,6 +120,32 @@ impl ResourceRegistry {
     }
 
     //__________________________TGA_____________________
+    pub fn get_tga(&self, path: &Path) -> ResourceManagerResult<Rc<Image<u8>>> {
+        match self.tga_registry.get(path) {
+            Some(tga) => {
+                Ok(tga.clone())
+            },
+            None => {
+                Err(ResourceManagerError::ResourceError(format!("Could not find the tga data at path {:?} in the tga registry !", path)))
+            },
+        }
+    }
+
+    pub fn add_tga(&mut self, path: &Path, tga_resource: Image<u8>) {
+        self.tga_registry.insert(path.to_path_buf(), Rc::new(tga_resource));
+    }
+
+    pub fn remove_tga(&mut self, path: &Path) {
+        self.tga_registry.remove(path);
+    }
+
+    pub fn has_tga(&self, path: &Path) -> bool {
+        self.tga_registry.get(path).is_some()
+    }
+
+    pub fn is_tga_empty(&self) -> bool {
+        self.tga_registry.is_empty()
+    }
 }
 
 mod gltf_registry;
