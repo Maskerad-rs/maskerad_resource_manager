@@ -10,7 +10,6 @@ use std::fmt;
 use maskerad_filesystem::filesystem_error::FileSystemError;
 use gltf::Error as GltfError;
 use maskerad_data_parser::data_parser_error::DataParserError;
-use claxon::Error as FlacError;
 use lewton::VorbisError as OggError;
 use imagefmt::Error as ImageError;
 
@@ -21,7 +20,6 @@ pub enum ResourceManagerError {
     GltfError(String, GltfError),
     ResourceError(String),
     ParsingError(String, DataParserError),
-    FlacError(String, FlacError),
     OggError(String, OggError),
     ImageError(String, ImageError),
 }
@@ -40,9 +38,6 @@ impl fmt::Display for ResourceManagerError {
             },
             &ResourceManagerError::ParsingError(ref description, _) => {
                 write!(f, "Parsing error: {}", description)
-            },
-            &ResourceManagerError::FlacError(ref description, _) => {
-                write!(f, "Flac error: {}", description)
             },
             &ResourceManagerError::OggError(ref description, _) => {
                 write!(f, "Ogg error: {}", description)
@@ -69,9 +64,6 @@ impl Error for ResourceManagerError {
             &ResourceManagerError::ParsingError(_, _) => {
                 "ParsingError"
             },
-            &ResourceManagerError::FlacError(_, _) => {
-                "FlacError"
-            },
             &ResourceManagerError::OggError(_, _) => {
                 "OggError"
             },
@@ -94,9 +86,6 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::ParsingError(_, ref parser_error) => {
                 Some(parser_error)
-            },
-            &ResourceManagerError::FlacError(_, ref flac_error) => {
-                Some(flac_error)
             },
             &ResourceManagerError::OggError(_, ref ogg_error) => {
                 Some(ogg_error)
@@ -125,12 +114,6 @@ impl From<GltfError> for ResourceManagerError {
 impl From<DataParserError> for ResourceManagerError {
     fn from(error: DataParserError) -> Self {
         ResourceManagerError::ParsingError(format!("Error while parsing a file."), error)
-    }
-}
-
-impl From<FlacError> for ResourceManagerError {
-    fn from(error: FlacError) -> Self {
-        ResourceManagerError::FlacError(format!("Error while dealing with a flac structure."), error)
     }
 }
 

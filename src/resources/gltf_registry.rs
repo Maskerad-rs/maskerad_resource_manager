@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use gltf::Gltf;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};

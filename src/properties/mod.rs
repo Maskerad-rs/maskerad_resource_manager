@@ -5,12 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use std::collections::HashMap;
-use std::path::{PathBuf, Path};
 use maskerad_gameobject_model::properties::transform::Transform;
 use maskerad_gameobject_model::properties::mesh::Mesh;
-
-use std::rc::Rc;
 
 use properties::mesh_registry::MeshRegistry;
 use properties::transform_registry::TransformRegistry;

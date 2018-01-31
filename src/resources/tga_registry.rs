@@ -8,15 +8,11 @@
 //TODO:Custom allocators if possible
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use imagefmt::Image;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
-use std::io::BufReader;
-use std::fs::File;
-
-use std::io::Read;
 
 pub struct TgaRegistry(HashMap<PathBuf, Rc<Image<u8>>>);
 

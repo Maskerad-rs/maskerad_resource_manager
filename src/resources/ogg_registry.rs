@@ -8,15 +8,13 @@
 //TODO:Custom allocators if possible
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use lewton::inside_ogg::OggStreamReader;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
 use std::io::BufReader;
 use std::fs::File;
-
-use std::io::Read;
 
 pub struct OggRegistry(HashMap<PathBuf, Rc<OggStreamReader<BufReader<File>>>>);
 

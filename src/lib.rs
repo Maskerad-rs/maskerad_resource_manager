@@ -11,7 +11,6 @@ extern crate maskerad_filesystem;
 extern crate maskerad_data_parser;
 extern crate maskerad_gameobject_model;
 extern crate gltf;
-extern crate claxon;
 extern crate lewton;
 extern crate imagefmt;
 
@@ -25,13 +24,13 @@ mod properties;
 /*
     functionalities :
     - ensure that only one resource is loaded in memory, at any given time. -> hashmap guid ?
-    - manage the lifetime of each resource.                     -> hashmap guid ?
-    - load needed resources, unload unneeded resources.
+    - manage the lifetime of each resource.                     -> hashmap guid ?               OK
+    - load needed resources, unload unneeded resources.                                         OK
     - handle composite structures.
     - maintain referential integrity (internal and external).
     - manage memory usage and how the data is placed in memory. -> custom allocators
     - custom-processing, on a per-resource-type basis.
-    - a unified interface, through the form of a memory manager. -> one structure
+    - a unified interface, through the form of a memory manager. -> one structure               OK
     - handle streaming, if the fs support it.
 
     resource file organization : a simple one, to begin with :
@@ -42,7 +41,7 @@ mod properties;
     file formats :
     - textures : tga.
     - 3D models : glTF.
-    - Audio : ogg, flac.
+    - Audio : ogg.
     - or maybe make an offline tool to "compile" data in bin form.
 
     Resources must have an ID : the filesystem path, or a hash generally.
