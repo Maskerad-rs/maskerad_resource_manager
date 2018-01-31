@@ -13,14 +13,14 @@ use properties::transform_registry::TransformRegistry;
 
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 
-pub struct PropertiesRegistry {
+pub struct PropertyRegistry {
     transform_registry: TransformRegistry,
     mesh_registry: MeshRegistry,
 }
 
-impl PropertiesRegistry {
+impl PropertyRegistry {
     pub fn new() -> Self {
-        PropertiesRegistry {
+        PropertyRegistry {
             transform_registry: TransformRegistry::new(),
             mesh_registry: MeshRegistry::new(),
         }

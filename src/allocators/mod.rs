@@ -5,11 +5,14 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-/*
-pub struct AllocatorsRegistry {
-    stack_registry: stack_registry::
+use maskerad_memory_allocators::StackAllocator;
+
+pub struct AllocatorRegistry {
+    persistent_allocator: StackAllocator,
+    one_frame_allocator: StackAllocator,
+    dynamic_allocators: (),
 }
-*/
+
 
 mod stack_registry;
 mod object_pool_registry;

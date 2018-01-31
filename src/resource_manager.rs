@@ -21,7 +21,7 @@ use maskerad_filesystem::filesystem as maskerad_filesystem;
 use maskerad_data_parser::level_description::LevelDescription;
 use maskerad_data_parser::gameobject_description::GameObjectDescription;
 
-use properties::PropertiesRegistry;
+use properties::PropertyRegistry;
 use resources::ResourceRegistry;
 use refcount_registry::RefCountRegistry;
 
@@ -35,7 +35,7 @@ pub struct ResourceManager {
     //An allocators registry
     //A refcount registry
     resource_registry: ResourceRegistry,
-    properties_registry: PropertiesRegistry,
+    properties_registry: PropertyRegistry,
     refcount_registry: RefCountRegistry,
 }
 
@@ -43,7 +43,7 @@ impl ResourceManager {
     fn new() -> Self {
         ResourceManager {
             resource_registry: ResourceRegistry::new(),
-            properties_registry: PropertiesRegistry::new(),
+            properties_registry: PropertyRegistry::new(),
             refcount_registry: RefCountRegistry::new(),
         }
     }
