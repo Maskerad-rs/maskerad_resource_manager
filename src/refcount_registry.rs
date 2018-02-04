@@ -9,68 +9,70 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
+use std::collections::hash_map::{Iter, Keys};
 
+#[derive(Debug)]
 pub struct RefCountRegistry(HashMap<PathBuf, u8>); //TODO: Maybe Cell<u8>, if problems with mutable reference number of this struct.
+
+impl Default for RefCountRegistry {
+    fn default() -> Self {
+        RefCountRegistry(HashMap::default())
+    }
+}
 
 impl RefCountRegistry {
     pub fn new() -> Self {
-        RefCountRegistry(HashMap::new())
+        Default::default()
     }
 
-    pub fn get_refcount_of(&self, path: &Path) -> ResourceManagerResult<u8> {
-        match self.get(path) {
+    pub fn get_refcount_of<P: AsRef<Path>>(&self, path: P) -> ResourceManagerResult<u8> {
+        match self.0.get(path.as_ref()) {
             Some(refcount) => {
                 Ok(*refcount)
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {:?} in the refcount registry !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {} in the refcount registry !", path.as_ref().display())))
             }
         }
     }
 
-    pub fn increment_refcount_of(&mut self, path: &Path) -> ResourceManagerResult<()> {
-        match self.get_mut(path) {
+    pub fn increment_refcount_of<P: AsRef<Path>>(&mut self, path: P) -> ResourceManagerResult<()> {
+        match self.0.get_mut(path.as_ref()) {
             Some(ref_count) => {
                 *ref_count += 1;
                 Ok(())
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {:?} in the refcount registry and increment it !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {} in the refcount registry and increment it !", path.as_ref().display())))
             }
         }
     }
 
-    pub fn decrement_refcount_of(&mut self, path: &Path) -> ResourceManagerResult<()> {
-        match self.get_mut(path) {
+    pub fn decrement_refcount_of<P: AsRef<Path>>(&mut self, path: P) -> ResourceManagerResult<()> {
+        match self.0.get_mut(path.as_ref()) {
             Some(ref_count) => {
                 *ref_count -= 1;
                 Ok(())
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {:?} in the refcount registry and decrement it !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not get the refcount of the resource at path {} in the refcount registry and decrement it !", path.as_ref().display())))
             }
         }
     }
 
-    pub fn add_refcount(&mut self, path: &Path) {
-        self.insert(path.to_path_buf(), 1);
+    pub fn add_refcount<P: Into<PathBuf>>(&mut self, path: P) {
+        self.0.insert(path.into(), 1);
     }
 
-    pub fn has_refcount(&self, path: &Path) -> bool {
-        self.get(path).is_some()
+    pub fn has_refcount<P: AsRef<Path>>(&self, path: P) -> bool {
+        self.0.get(path.as_ref()).is_some()
     }
-}
 
-impl Deref for RefCountRegistry {
-    type Target = HashMap<PathBuf, u8>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn iter(&self) -> Iter<PathBuf, u8> {
+        self.0.iter()
     }
-}
 
-impl DerefMut for RefCountRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn keys(&self) -> Keys<PathBuf, u8> {
+        self.0.keys()
     }
 }

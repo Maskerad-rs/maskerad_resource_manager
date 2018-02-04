@@ -19,6 +19,7 @@ mod resource_manager_errors;
 mod refcount_registry;
 mod allocators;
 mod resources;
+mod resource_manager_trait;
 mod properties;
 
 /*

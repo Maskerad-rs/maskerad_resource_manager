@@ -20,8 +20,8 @@ is-it-maintained-open-issues = { repository = "Maskerad-rs/maskerad_resource_man
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-maskerad_memory_allocators = "~4.0.0"
-maskerad_object_pool = "~0.1.0"
+maskerad_memory_allocators = "~5.0.0"
+maskerad_object_pool = "~0.2.0"
 #gltf stuff
 gltf = "~0.9.0"
 #ogg stuff

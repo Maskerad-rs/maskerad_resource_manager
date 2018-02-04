@@ -8,30 +8,43 @@
 //TODO:Custom allocators if possible
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use imagefmt::Image;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
 
+#[derive(Debug)]
 pub struct TgaRegistry(HashMap<PathBuf, Rc<Image<u8>>>);
+
+impl Default for TgaRegistry {
+    fn default() -> Self {
+        TgaRegistry(HashMap::default())
+    }
+}
 
 impl TgaRegistry {
     pub fn new() -> Self {
-        TgaRegistry(HashMap::new())
+        Default::default()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<Image<u8>>> {
+        self.0.get(path.as_ref())
+    }
+
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<Image<u8>>> {
+        self.0.remove(path.as_ref())
+    }
+
+    pub fn insert<I, J>(&mut self, path: I, tga_res: J) -> Option<Rc<Image<u8>>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<Image<u8>>>
+    {
+        self.0.insert(path.into(),tga_res.into())
     }
 }
 
-impl Deref for TgaRegistry {
-    type Target = HashMap<PathBuf, Rc<Image<u8>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for TgaRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}

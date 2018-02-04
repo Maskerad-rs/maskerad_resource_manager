@@ -12,14 +12,18 @@ use std::io::{Read, Seek};
 use std::io::BufReader;
 use lewton::inside_ogg::OggStreamReader;
 
+use std::rc::Rc;
+
 use imagefmt::Image;
 use imagefmt::tga;
 use imagefmt::ColFmt;
 
+use std::collections::hash_map::Iter;
+
 use maskerad_filesystem::filesystem as maskerad_filesystem;
 
 use maskerad_data_parser::level_description::LevelDescription;
-use maskerad_data_parser::gameobject_description::GameObjectDescription;
+use maskerad_data_parser::gameobject_builder::GameObjectBuilder;
 
 use properties::PropertyRegistry;
 use resources::ResourceRegistry;
@@ -29,6 +33,9 @@ use maskerad_gameobject_model::properties::transform::Transform;
 
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 
+use resource_manager_trait::IResourceManager;
+
+#[derive(Default)]
 pub struct ResourceManager {
     //A resources registry
     //A properties registry
@@ -39,28 +46,125 @@ pub struct ResourceManager {
     refcount_registry: RefCountRegistry,
 }
 
-impl ResourceManager {
-    fn new() -> Self {
-        ResourceManager {
-            resource_registry: ResourceRegistry::new(),
-            properties_registry: PropertyRegistry::new(),
-            refcount_registry: RefCountRegistry::new(),
+impl IResourceManager for ResourceManager {
+    fn load_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
+        P: AsRef<Path> + Into<PathBuf>
+    {
+        let mut reader = maskerad_filesystem::open(path.as_ref())?;
+        match path.as_ref().extension() {
+            Some(osstr_ext) => {
+                match osstr_ext.to_str() {
+                    Some(str_ext) => {
+                        match str_ext {
+                            "ogg" => {
+                                let ogg_data = Rc::new(OggStreamReader::new(reader)?);
+                                self.resource_registry.add_ogg(path.as_ref(), ogg_data);
+                            },
+                            "tga" => {
+                                let tga_data = Rc::new(tga::read(&mut reader, ColFmt::Auto)?);
+                                self.resource_registry.add_tga(path.as_ref(), tga_data);
+                            },
+                            "gltf" => {
+                                let gltf_data = Rc::new(Gltf::from_reader(reader)?.validate_completely()?);
+                                self.resource_registry.add_gltf(path.as_ref(), gltf_data);
+                            },
+                            _ => {
+                                return Err(ResourceManagerError::ResourceError(format!("The data at path {} cannot be loaded by the engine !", path.as_ref().display())));
+                            }
+                        }
+                    },
+                    None => {
+                        return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid unicode !", path.as_ref().display())));
+                    }
+                }
+            },
+            None => {
+                return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid !", path.as_ref().display())));
+            }
         }
+        Ok(())
     }
 
+    fn unload_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
+        P: AsRef<Path>
+    {
+        match path.as_ref().extension() {
+            Some(osstr_ext) => {
+                match osstr_ext.to_str() {
+                    Some(str_ext) => {
+                        match str_ext {
+                            "ogg" => {
+                                self.resource_registry.remove_ogg(path.as_ref());
+                            },
+                            "tga" => {
+                                self.resource_registry.remove_tga(path.as_ref());
+                            },
+                            "gltf" => {
+                                self.resource_registry.remove_gltf(path.as_ref());
+                            },
+                            _ => {
+                                return Err(ResourceManagerError::ResourceError(format!("The data at path {} cannot be unloaded by the engine !", path.as_ref().display())));
+                            }
+                        }
+                    },
+                    None => {
+                        return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid unicode !", path.as_ref().display())));
+                    }
+                }
+            },
+            None => {
+                return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid !", path.as_ref().display())));
+            }
+        }
+        Ok(())
+    }
+
+    fn increment_refcount_resource<P>(&mut self, path: P) -> ResourceManagerResult<Option<PathBuf>> where
+        P: AsRef<Path> + Into<PathBuf>
+    {
+        let mut new_path = None;
+
+        if !self.refcount_registry.has_refcount(path.as_ref()) {
+            //Add the refcount of this resource
+            self.refcount_registry.add_refcount(path.as_ref());
+            new_path = Some(path.into());
+        } else {
+            //increment the refcount of this resource
+            self.refcount_registry.increment_refcount_of(path.as_ref())?
+        }
+        Ok(new_path)
+    }
+
+    fn decrement_refcount_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
+        P: AsRef<Path>
+    {
+        self.refcount_registry.decrement_refcount_of(path.as_ref())?;
+        Ok(())
+    }
+
+    fn refcounts(&self) -> Iter<PathBuf, u8> {
+        self.refcount_registry.iter()
+    }
+}
+
+impl ResourceManager {
+    fn new() -> Self {
+        Default::default()
+    }
+
+
+    //TODO: read what is under your nose tomorrow.
     //First step.
-    fn read_needed_resources(&self, gameobject_descriptions: &[GameObjectDescription]) -> Vec<PathBuf> {
-        let mut vec = Vec::new();
+    fn read_needed_resources<I>(&self, level: I) -> Vec<String> where
+        I: AsRef<LevelDescription>,
+    {
+        let mut vec: Vec<String> = Vec::new();
 
-        for gameobject_description in gameobject_descriptions.iter() {
-
-            //MESH
-            //a gameobject's mesh has an external resource -> gltf data.
-            let mesh_option = gameobject_description.mesh();
-            if let Some(ref mesh_desc) = *mesh_option {
-                //Don't allow doublons.
-                if !vec.contains(&mesh_desc.path().to_path_buf()) {
-                    vec.push(mesh_desc.path().to_path_buf());
+        //TODO: mesh
+        for gameobject_builder in level.as_ref().slice() {
+            if let Some(mesh_path) = gameobject_builder.get_mesh_resource() {
+                if !vec.contains(&mesh_path) {
+                    vec.push(mesh_path);
                 }
             }
 
@@ -70,140 +174,6 @@ impl ResourceManager {
         vec
     }
 
-    //Second step.
-    fn increment_refcount(&mut self, path_new_resource: &Path) -> ResourceManagerResult<()> {
-        if !self.refcount_registry.has_refcount(path_new_resource) {
-            //Add the refcount of this resource
-            self.refcount_registry.add_refcount(path_new_resource);
-        } else {
-            //increment the refcount of this resource
-            self.refcount_registry.increment_refcount_of(path_new_resource)?
-        }
-        Ok(())
-    }
-
-    //Third step.
-    fn decrement_refcount(&mut self, resource_to_decrease: &Path) -> ResourceManagerResult<()> {
-        self.refcount_registry.decrement_refcount_of(resource_to_decrease)?;
-        Ok(())
-    }
-
-    fn unload_resource(&mut self, path: &Path) -> ResourceManagerResult<()> {
-        match path.extension() {
-            Some(osstr_ext) => {
-                match osstr_ext.to_str() {
-                    Some(str_ext) => {
-                        match str_ext {
-                            "ogg" => {
-                                self.resource_registry.remove_ogg(path);
-                            },
-                            "tga" => {
-                                self.resource_registry.remove_tga(path);
-                            },
-                            "gltf" => {
-                                self.resource_registry.remove_gltf(path);
-                            },
-                            _ => {
-                                return Err(ResourceManagerError::ResourceError(format!("The data at path {} cannot be unloaded by the engine !", path.display())));
-                            }
-                        }
-                    },
-                    None => {
-                        return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid unicode !", path.display())));
-                    }
-                }
-            },
-            None => {
-                return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid !", path.display())));
-            }
-        }
-        Ok(())
-    }
-
-    fn load_resource(&mut self, path: &Path) -> ResourceManagerResult<()> {
-        let mut reader = maskerad_filesystem::open(path)?;
-        match path.extension() {
-            Some(osstr_ext) => {
-                match osstr_ext.to_str() {
-                    Some(str_ext) => {
-                        match str_ext {
-                            "ogg" => {
-                                let ogg_data = OggStreamReader::new(reader)?;
-                                self.resource_registry.add_ogg(path, ogg_data);
-                            },
-                            "tga" => {
-                                let tga_data = tga::read(&mut reader, ColFmt::Auto)?;
-                                self.resource_registry.add_tga(path, tga_data);
-                            },
-                            "gltf" => {
-                                let gltf_data = Gltf::from_reader(reader)?.validate_completely()?;
-                                self.resource_registry.add_gltf(path, gltf_data);
-                            },
-                            _ => {
-                                return Err(ResourceManagerError::ResourceError(format!("The data at path {} cannot be loaded by the engine !", path.display())));
-                            }
-                        }
-                    },
-                    None => {
-                        return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid unicode !", path.display())));
-                    }
-                }
-            },
-            None => {
-                return Err(ResourceManagerError::ResourceError(format!("The path {} is not valid !", path.display())));
-            }
-        }
-        Ok(())
-    }
-
-    //Doesn't actually "create" the level, we just load all the needed resources for all the objects inside the level.
-    pub fn load_level_resources(&mut self, level_description: &LevelDescription) -> ResourceManagerResult<()> {
-        /*
-        When loading level :
-        1 - read all needed resources.
-        2 - Increment the ref count of all those resources, and add them if they don't exist.
-        3 - then decrement the ref count of each unneeded resources.
-        4 - if a ref count drop to 0, unload the resource.
-        5 - load all the other resources and place them in the right memory allocator.
-        */
-
-        let go_desc = level_description.generate_gameobject_descriptions()?;
-
-        let path_new_resources = self.read_needed_resources(&go_desc);
-        for path in path_new_resources.iter() {
-            self.increment_refcount(path.as_path())?;
-        }
-
-        let resource_to_decrease = self.refcount_registry.keys().filter(|elem| {
-            !path_new_resources.contains(elem)
-        }).cloned().collect::<Vec<PathBuf>>();
-        for resource in resource_to_decrease.iter() {
-            self.decrement_refcount(resource.as_path())?;
-        }
-
-
-        let resources_to_unload = self.refcount_registry.iter().filter(|elem| {
-            (*elem.1) == 0
-        }).map(|elem| {
-            elem.0
-        }).cloned().collect::<Vec<PathBuf>>();
-        for resource in resources_to_unload.iter() {
-            self.unload_resource(resource.as_path())?;
-        }
-
-
-
-        let resources_to_load = self.refcount_registry.iter().filter(|elem| {
-            (*elem.1) == 1
-        }).map(|elem| {
-            elem.0
-        }).cloned().collect::<Vec<PathBuf>>();
-        for resource in resources_to_load.iter() {
-            self.load_resource(resource.as_path())?;
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]

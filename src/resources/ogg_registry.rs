@@ -8,7 +8,7 @@
 //TODO:Custom allocators if possible
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use lewton::inside_ogg::OggStreamReader;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
@@ -18,22 +18,33 @@ use std::fs::File;
 
 pub struct OggRegistry(HashMap<PathBuf, Rc<OggStreamReader<BufReader<File>>>>);
 
+impl Default for OggRegistry {
+    fn default() -> Self {
+        OggRegistry(HashMap::default())
+    }
+}
+
 impl OggRegistry {
     pub fn new() -> Self {
-        OggRegistry(HashMap::new())
+        Default::default()
     }
-}
 
-impl Deref for OggRegistry {
-    type Target = HashMap<PathBuf, Rc<OggStreamReader<BufReader<File>>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
-}
 
-impl DerefMut for OggRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<OggStreamReader<BufReader<File>>>> {
+        self.0.get(path.as_ref())
+    }
+
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<OggStreamReader<BufReader<File>>>> {
+        self.0.remove(path.as_ref())
+    }
+
+    pub fn insert<I, J>(&mut self, path: I, ogg_res: J) -> Option<Rc<OggStreamReader<BufReader<File>>>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<OggStreamReader<BufReader<File>>>>
+    {
+        self.0.insert(path.into(),ogg_res.into())
     }
 }

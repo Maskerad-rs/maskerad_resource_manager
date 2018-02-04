@@ -6,31 +6,43 @@
 // copied, modified, or distributed except according to those terms.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use gltf::Gltf;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
 //TODO:Custom allocators if possible
 
+#[derive(Debug)]
 pub struct GltfRegistry(HashMap<PathBuf, Rc<Gltf>>);
+
+impl Default for GltfRegistry {
+    fn default() -> Self {
+        GltfRegistry(HashMap::default())
+    }
+}
 
 impl GltfRegistry {
     pub fn new() -> Self {
-        GltfRegistry(HashMap::new())
+        Default::default()
     }
-}
 
-impl Deref for GltfRegistry {
-    type Target = HashMap<PathBuf, Rc<Gltf>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
-}
 
-impl DerefMut for GltfRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<Gltf>> {
+        self.0.get(path.as_ref())
+    }
+
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<Gltf>> {
+        self.0.remove(path.as_ref())
+    }
+
+    pub fn insert<I, J>(&mut self, path: I, ogg_res: J) -> Option<Rc<Gltf>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<Gltf>>
+    {
+        self.0.insert(path.into(),ogg_res.into())
     }
 }

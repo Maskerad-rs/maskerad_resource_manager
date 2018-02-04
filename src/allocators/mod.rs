@@ -6,13 +6,10 @@
 // copied, modified, or distributed except according to those terms.
 
 use maskerad_memory_allocators::StackAllocator;
+use maskerad_object_pool;
 
 pub struct AllocatorRegistry {
     persistent_allocator: StackAllocator,
     one_frame_allocator: StackAllocator,
     dynamic_allocators: (),
 }
-
-
-mod stack_registry;
-mod object_pool_registry;

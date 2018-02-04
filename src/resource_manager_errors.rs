@@ -24,6 +24,9 @@ pub enum ResourceManagerError {
     ImageError(String, ImageError),
 }
 
+unsafe impl Send for ResourceManagerError {}
+unsafe impl Sync for ResourceManagerError {}
+
 impl fmt::Display for ResourceManagerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

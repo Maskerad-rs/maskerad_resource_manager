@@ -6,27 +6,38 @@
 // copied, modified, or distributed except according to those terms.
 
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use maskerad_gameobject_model::properties::mesh::Mesh;
 
+#[derive(Debug)]
 pub struct MeshRegistry(HashMap<String, Mesh>);
+
+impl Default for MeshRegistry {
+    fn default() -> Self {
+        MeshRegistry(HashMap::default())
+    }
+}
 
 impl MeshRegistry {
     pub fn new() -> Self {
-        MeshRegistry(HashMap::new())
+        Default::default()
     }
-}
 
-impl Deref for MeshRegistry {
-    type Target = HashMap<String, Mesh>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
-}
 
-impl DerefMut for MeshRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get<I: AsRef<str>>(&self, path: I) -> Option<&Mesh> {
+        self.0.get(path.as_ref())
+    }
+
+    pub fn remove<I: AsRef<str>>(&mut self, path: I) -> Option<Mesh> {
+        self.0.remove(path.as_ref())
+    }
+
+    pub fn insert<I, J>(&mut self, path: I, mesh: J) -> Option<Mesh> where
+        I: Into<String>,
+        J: Into<Mesh>
+    {
+        self.0.insert(path.into(),mesh.into())
     }
 }

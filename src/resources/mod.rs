@@ -6,7 +6,7 @@
 // copied, modified, or distributed except according to those terms.
 
 use resources::gltf_registry::GltfRegistry;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 use std::rc::Rc;
 use gltf::Gltf;
@@ -23,36 +23,45 @@ pub struct ResourceRegistry {
     tga_registry: TgaRegistry,
 }
 
+impl Default for ResourceRegistry {
+    fn default() -> Self {
+        ResourceRegistry {
+            gltf_registry: GltfRegistry::default(),
+            ogg_registry: OggRegistry::default(),
+            tga_registry: TgaRegistry::default(),
+        }
+    }
+}
+
 impl ResourceRegistry {
     pub fn new() -> Self {
-        ResourceRegistry {
-            gltf_registry: GltfRegistry::new(),
-            ogg_registry: OggRegistry::new(),
-            tga_registry: TgaRegistry::new(),
-        }
+        Default::default()
     }
 
     //____________________GLTF____________________________
-    pub fn get_gltf(&self, path: &Path) -> ResourceManagerResult<Rc<Gltf>> {
-        match self.gltf_registry.get(path) {
+    pub fn get_gltf<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<Gltf>> {
+        match self.gltf_registry.get(&path) {
             Some(gltf) => {
                 Ok(gltf.clone())
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not find the gltf data at path {:?} in the gltf registry !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not find the gltf data at path {} in the gltf registry !", path.as_ref().display())))
             },
         }
     }
 
-    pub fn add_gltf(&mut self, path: &Path, gltf_resource: Gltf) {
-        self.gltf_registry.insert(path.to_path_buf(), Rc::new(gltf_resource));
+    pub fn add_gltf<I, J>(&mut self, path: I, gltf_resource: J) -> Option<Rc<Gltf>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<Gltf>>
+    {
+        self.gltf_registry.insert(path, gltf_resource)
     }
 
-    pub fn remove_gltf(&mut self, path: &Path) {
+    pub fn remove_gltf<I: AsRef<Path>>(&mut self, path: I) {
         self.gltf_registry.remove(path);
     }
 
-    pub fn has_gltf(&self, path: &Path) -> bool {
+    pub fn has_gltf<I: AsRef<Path>>(&self, path: I) -> bool {
         self.gltf_registry.get(path).is_some()
     }
 
@@ -62,26 +71,29 @@ impl ResourceRegistry {
 
 
     //_________________________OGG______________________
-    pub fn get_ogg(&self, path: &Path) -> ResourceManagerResult<Rc<OggStreamReader<BufReader<File>>>> {
-        match self.ogg_registry.get(path) {
+    pub fn get_ogg<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<OggStreamReader<BufReader<File>>>> {
+        match self.ogg_registry.get(&path) {
             Some(ogg) => {
                 Ok(ogg.clone())
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not find the ogg data at path {:?} in the ogg registry !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not find the ogg data at path {} in the ogg registry !", path.as_ref().display())))
             },
         }
     }
 
-    pub fn add_ogg(&mut self, path: &Path, ogg_resource: OggStreamReader<BufReader<File>>) {
-        self.ogg_registry.insert(path.to_path_buf(), Rc::new(ogg_resource));
+    pub fn add_ogg<I, J>(&mut self, path: I, ogg_resource: J) -> Option<Rc<OggStreamReader<BufReader<File>>>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<OggStreamReader<BufReader<File>>>>,
+    {
+        self.ogg_registry.insert(path, ogg_resource)
     }
 
-    pub fn remove_ogg(&mut self, path: &Path) {
+    pub fn remove_ogg<I: AsRef<Path>>(&mut self, path: I) {
         self.ogg_registry.remove(path);
     }
 
-    pub fn has_ogg(&self, path: &Path) -> bool {
+    pub fn has_ogg<I: AsRef<Path>>(&self, path: I) -> bool {
         self.ogg_registry.get(path).is_some()
     }
 
@@ -90,26 +102,29 @@ impl ResourceRegistry {
     }
 
     //__________________________TGA_____________________
-    pub fn get_tga(&self, path: &Path) -> ResourceManagerResult<Rc<Image<u8>>> {
-        match self.tga_registry.get(path) {
+    pub fn get_tga<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<Image<u8>>> {
+        match self.tga_registry.get(&path) {
             Some(tga) => {
                 Ok(tga.clone())
             },
             None => {
-                Err(ResourceManagerError::ResourceError(format!("Could not find the tga data at path {:?} in the tga registry !", path)))
+                Err(ResourceManagerError::ResourceError(format!("Could not find the tga data at path {} in the tga registry !", path.as_ref().display())))
             },
         }
     }
 
-    pub fn add_tga(&mut self, path: &Path, tga_resource: Image<u8>) {
-        self.tga_registry.insert(path.to_path_buf(), Rc::new(tga_resource));
+    pub fn add_tga<I, J>(&mut self, path: I, tga_resource: J) -> Option<Rc<Image<u8>>> where
+        I: Into<PathBuf>,
+        J: Into<Rc<Image<u8>>>,
+    {
+        self.tga_registry.insert(path, tga_resource)
     }
 
-    pub fn remove_tga(&mut self, path: &Path) {
+    pub fn remove_tga<I: AsRef<Path>>(&mut self, path: I) {
         self.tga_registry.remove(path);
     }
 
-    pub fn has_tga(&self, path: &Path) -> bool {
+    pub fn has_tga<I: AsRef<Path>>(&self, path: I) -> bool {
         self.tga_registry.get(path).is_some()
     }
 

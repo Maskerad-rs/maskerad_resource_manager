@@ -6,27 +6,38 @@
 // copied, modified, or distributed except according to those terms.
 
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use maskerad_gameobject_model::properties::transform::Transform;
 
+#[derive(Debug)]
 pub struct TransformRegistry(HashMap<String, Transform>);
+
+impl Default for TransformRegistry {
+    fn default() -> Self {
+        TransformRegistry(HashMap::default())
+    }
+}
 
 impl TransformRegistry {
     pub fn new() -> Self {
-        TransformRegistry(HashMap::new())
+        Default::default()
     }
-}
 
-impl Deref for TransformRegistry {
-    type Target = HashMap<String, Transform>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
-}
 
-impl DerefMut for TransformRegistry {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get<I: AsRef<str>>(&self, path: I) -> Option<&Transform> {
+        self.0.get(path.as_ref())
+    }
+
+    pub fn remove<I: AsRef<str>>(&mut self, path: I) -> Option<Transform> {
+        self.0.remove(path.as_ref())
+    }
+
+    pub fn insert<I, J>(&mut self, path: I, transform: J) -> Option<Transform> where
+        I: Into<String>,
+        J: Into<Transform>
+    {
+        self.0.insert(path.into(),transform.into())
     }
 }
