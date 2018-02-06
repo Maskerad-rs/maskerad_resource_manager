@@ -152,8 +152,6 @@ impl ResourceManager {
         Default::default()
     }
 
-
-    //TODO: read what is under your nose tomorrow.
     //First step.
     fn read_needed_resources<I>(&self, level: I) -> Vec<String> where
         I: AsRef<LevelDescription>,
