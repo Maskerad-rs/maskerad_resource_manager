@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use imagefmt::Image;
 use std::rc::Rc;
-use std::ops::{Deref, DerefMut};
 
 
 #[derive(Debug)]

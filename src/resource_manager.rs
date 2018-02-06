@@ -5,44 +5,27 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use std::collections::HashMap;
 use std::path::{PathBuf, Path};
-use gltf::{Gltf, Glb};
-use std::io::{Read, Seek};
-use std::io::BufReader;
+use gltf::Gltf;
 use lewton::inside_ogg::OggStreamReader;
-
 use std::rc::Rc;
-
-use imagefmt::Image;
 use imagefmt::tga;
 use imagefmt::ColFmt;
-
 use std::collections::hash_map::Iter;
-
 use maskerad_filesystem::filesystem as maskerad_filesystem;
-
 use maskerad_data_parser::level_description::LevelDescription;
-use maskerad_data_parser::gameobject_builder::GameObjectBuilder;
+use resources::resources_registry::ResourceRegistry;
+use resources::refcount_registry::RefCountRegistry;
+use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
+use resources::resource_manager_trait::IResourceManager;
+use maskerad_memory_allocators::StackAllocator;
 
-use properties::PropertyRegistry;
-use resources::ResourceRegistry;
-use refcount_registry::RefCountRegistry;
-
-use maskerad_gameobject_model::properties::transform::Transform;
-
-use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
-
-use resource_manager_trait::IResourceManager;
-
-#[derive(Default)]
 pub struct ResourceManager {
     //A resources registry
-    //A properties registry
     //An allocators registry
     //A refcount registry
+    stack_allocator: StackAllocator,
     resource_registry: ResourceRegistry,
-    properties_registry: PropertyRegistry,
     refcount_registry: RefCountRegistry,
 }
 
@@ -58,14 +41,17 @@ impl IResourceManager for ResourceManager {
                         match str_ext {
                             "ogg" => {
                                 let ogg_data = Rc::new(OggStreamReader::new(reader)?);
+
                                 self.resource_registry.add_ogg(path.as_ref(), ogg_data);
                             },
                             "tga" => {
                                 let tga_data = Rc::new(tga::read(&mut reader, ColFmt::Auto)?);
+
                                 self.resource_registry.add_tga(path.as_ref(), tga_data);
                             },
                             "gltf" => {
                                 let gltf_data = Rc::new(Gltf::from_reader(reader)?.validate_completely()?);
+
                                 self.resource_registry.add_gltf(path.as_ref(), gltf_data);
                             },
                             _ => {
@@ -148,8 +134,12 @@ impl IResourceManager for ResourceManager {
 }
 
 impl ResourceManager {
-    fn new() -> Self {
-        Default::default()
+    fn with_capacity(allocator_capacity: usize, allocator_capacity_copy: usize) -> Self {
+        ResourceManager {
+            stack_allocator: StackAllocator::with_capacity(allocator_capacity, allocator_capacity_copy),
+            refcount_registry: RefCountRegistry::new(),
+            resource_registry: ResourceRegistry::new(),
+        }
     }
 
     //First step.
@@ -180,15 +170,13 @@ mod resource_manager_test {
 
     #[test]
     fn resource_manager_creation() {
-        let resource_manager = ResourceManager::new();
-        assert!(resource_manager.properties_registry.is_mesh_empty());
-        assert!(resource_manager.properties_registry.is_transform_empty());
+        let resource_manager = ResourceManager::with_capacity(100, 50);
         assert!(resource_manager.resource_registry.is_gltf_empty());
     }
 
     #[test]
     fn resource_manager_load_unload_resource() {
-    //Only one copy of the resource.
+        //Only one copy of the resource.
     }
 
     #[test]

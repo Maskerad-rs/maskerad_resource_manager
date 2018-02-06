@@ -7,9 +7,10 @@
 
 use std::path::{Path, PathBuf};
 use std::collections::hash_map::Iter;
-use maskerad_data_parser::level_description::LevelDescription;
-use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
+use resources::resource_manager_errors::ResourceManagerResult;
+use maskerad_memory_allocators::StackAllocator;
 
+//TODO: allocator getter.
 //TODO: type Key and replace every PathBuf by Self::Key ?
 pub trait IResourceManager {
     fn load_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where

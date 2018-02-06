@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use lewton::inside_ogg::OggStreamReader;
 use std::rc::Rc;
-use std::ops::{Deref, DerefMut};
 
 use std::io::BufReader;
 use std::fs::File;

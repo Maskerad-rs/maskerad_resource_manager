@@ -7,8 +7,7 @@
 
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
+use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 use std::collections::hash_map::{Iter, Keys};
 
 #[derive(Debug)]

@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use gltf::Gltf;
 use std::rc::Rc;
-use std::ops::{Deref, DerefMut};
 
 //TODO:Custom allocators if possible
 

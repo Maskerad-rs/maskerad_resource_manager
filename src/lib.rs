@@ -14,13 +14,10 @@ extern crate gltf;
 extern crate lewton;
 extern crate imagefmt;
 
+pub mod resources;
+pub mod properties;
 pub mod resource_manager;
-mod resource_manager_errors;
-mod refcount_registry;
-mod allocators;
-mod resources;
-mod resource_manager_trait;
-mod properties;
+pub mod property_manager;
 
 /*
     functionalities :
