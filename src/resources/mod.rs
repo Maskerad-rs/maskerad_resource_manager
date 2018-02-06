@@ -10,5 +10,4 @@ pub mod ogg_registry;
 pub mod tga_registry;
 pub mod refcount_registry;
 pub mod resource_manager_errors;
-pub mod resource_manager_trait;
 pub mod resources_registry;

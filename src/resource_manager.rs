@@ -17,7 +17,6 @@ use maskerad_data_parser::level_description::LevelDescription;
 use resources::resources_registry::ResourceRegistry;
 use resources::refcount_registry::RefCountRegistry;
 use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
-use resources::resource_manager_trait::IResourceManager;
 use maskerad_memory_allocators::StackAllocator;
 
 pub struct ResourceManager {
@@ -29,7 +28,35 @@ pub struct ResourceManager {
     refcount_registry: RefCountRegistry,
 }
 
-impl IResourceManager for ResourceManager {
+impl ResourceManager {
+    fn with_capacity(allocator_capacity: usize, allocator_capacity_copy: usize) -> Self {
+        ResourceManager {
+            stack_allocator: StackAllocator::with_capacity(allocator_capacity, allocator_capacity_copy),
+            refcount_registry: RefCountRegistry::new(),
+            resource_registry: ResourceRegistry::new(),
+        }
+    }
+
+    //First step.
+    fn read_needed_resources<I>(&self, level: I) -> Vec<String> where
+        I: AsRef<LevelDescription>,
+    {
+        let mut vec: Vec<String> = Vec::new();
+
+        //TODO: mesh
+        for gameobject_builder in level.as_ref().slice() {
+            if let Some(mesh_path) = gameobject_builder.get_mesh_resource() {
+                if !vec.contains(&mesh_path) {
+                    vec.push(mesh_path);
+                }
+            }
+
+            //TODO: other resources
+        }
+
+        vec
+    }
+
     fn load_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
         P: AsRef<Path> + Into<PathBuf>
     {
@@ -131,37 +158,117 @@ impl IResourceManager for ResourceManager {
     fn refcounts(&self) -> Iter<PathBuf, u8> {
         self.refcount_registry.iter()
     }
-}
 
-impl ResourceManager {
-    fn with_capacity(allocator_capacity: usize, allocator_capacity_copy: usize) -> Self {
-        ResourceManager {
-            stack_allocator: StackAllocator::with_capacity(allocator_capacity, allocator_capacity_copy),
-            refcount_registry: RefCountRegistry::new(),
-            resource_registry: ResourceRegistry::new(),
-        }
-    }
-
-    //First step.
-    fn read_needed_resources<I>(&self, level: I) -> Vec<String> where
-        I: AsRef<LevelDescription>,
+    fn resources_to_decrease<P>(&self, new_resource_slice: P) -> Vec<PathBuf> where
+        P: AsRef<[PathBuf]>,
     {
-        let mut vec: Vec<String> = Vec::new();
-
-        //TODO: mesh
-        for gameobject_builder in level.as_ref().slice() {
-            if let Some(mesh_path) = gameobject_builder.get_mesh_resource() {
-                if !vec.contains(&mesh_path) {
-                    vec.push(mesh_path);
-                }
-            }
-
-            //TODO: other resources
-        }
-
-        vec
+        self.refcounts()
+            .filter(|elem| {
+                !new_resource_slice.as_ref().contains(elem.0)
+            })
+            .map(|elem|{
+                elem.0
+            })
+            .cloned()
+            .collect::<Vec<PathBuf>>()
     }
 
+    fn resources_to_unload(&self) -> Vec<PathBuf> {
+        self.refcounts()
+            .filter(|elem| {
+                (*elem.1) == 0
+            })
+            .map(|elem| {
+                elem.0
+            })
+            .cloned()
+            .collect::<Vec<PathBuf>>()
+    }
+
+    fn resources_to_load(&self) -> Vec<PathBuf> {
+        self.refcounts()
+            .filter(|elem| {
+                (*elem.1) == 1
+            })
+            .map(|elem| {
+                elem.0
+            })
+            .cloned()
+            .collect::<Vec<PathBuf>>()
+    }
+
+    fn increment_refcount_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<Vec<PathBuf>> where
+        P: IntoIterator,
+        P::Item: AsRef<Path> + Into<PathBuf>,
+    {
+        let mut new_resources = Vec::new();
+        for path in resource_path_iter {
+            if let Some(new_resource_path) = self.increment_refcount_resource(path)? {
+                new_resources.push(new_resource_path)
+            }
+        }
+
+        Ok(new_resources)
+    }
+
+    fn decrement_refcount_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+        P: IntoIterator,
+        P::Item: AsRef<Path> + Into<PathBuf>,
+    {
+        for resource in resource_path_iter {
+            self.decrement_refcount_resource(resource)?;
+        }
+
+        Ok(())
+    }
+
+    fn load_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+        P: IntoIterator,
+        P::Item: AsRef<Path> + Into<PathBuf>,
+    {
+        for resource in resource_path_iter {
+            self.load_resource(resource)?;
+        }
+
+        Ok(())
+    }
+
+    fn unload_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+        P: IntoIterator,
+        P::Item: AsRef<Path>,
+    {
+        for resource in resource_path_iter {
+            self.unload_resource(resource)?;
+        }
+
+        Ok(())
+    }
+
+    fn load_level_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+        P: IntoIterator + AsRef<[PathBuf]>,
+        P::Item : AsRef<Path> + Into<PathBuf>,
+    {
+        /*
+        When loading level :
+        1 - read all needed resources.
+        2 - Increment the ref count of all those resources, and add them if they don't exist.
+        3 - then decrement the ref count of each unneeded resources.
+        4 - if a ref count drop to 0, unload the resource.
+        5 - load all the other resources and place them in the right memory allocator.
+        */
+        let new_resources = self.increment_refcount_resources(resource_path_iter)?;
+
+        let resources_to_decrease = self.resources_to_decrease(new_resources);
+        self.decrement_refcount_resources(resources_to_decrease)?;
+
+        let resources_to_unload = self.resources_to_unload();
+        self.unload_resources(resources_to_unload)?;
+
+        let resources_to_load = self.resources_to_load();
+        self.load_resources(resources_to_load)?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
