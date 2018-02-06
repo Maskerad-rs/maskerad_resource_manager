@@ -8,20 +8,17 @@
 use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use gltf::Gltf;
-use std::rc::Rc;
-
-//TODO:Custom allocators if possible
 
 #[derive(Debug)]
-pub struct GltfRegistry(HashMap<PathBuf, Rc<Gltf>>);
+pub struct GltfRegistry<'a>(HashMap<PathBuf, &'a Gltf>);
 
-impl Default for GltfRegistry {
+impl<'a> Default for GltfRegistry<'a> {
     fn default() -> Self {
         GltfRegistry(HashMap::default())
     }
 }
 
-impl GltfRegistry {
+impl<'a> GltfRegistry<'a> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -30,18 +27,17 @@ impl GltfRegistry {
         self.0.is_empty()
     }
 
-    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<Gltf>> {
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&&Gltf> {
         self.0.get(path.as_ref())
     }
 
-    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<Gltf>> {
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<&Gltf> {
         self.0.remove(path.as_ref())
     }
 
-    pub fn insert<I, J>(&mut self, path: I, ogg_res: J) -> Option<Rc<Gltf>> where
+    pub fn insert<I>(&mut self, path: I, gltf_res: &'a Gltf) -> Option<&Gltf> where
         I: Into<PathBuf>,
-        J: Into<Rc<Gltf>>
     {
-        self.0.insert(path.into(),ogg_res.into())
+        self.0.insert(path.into(),gltf_res)
     }
 }

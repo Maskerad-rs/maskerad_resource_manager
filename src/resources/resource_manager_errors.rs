@@ -12,6 +12,7 @@ use gltf::Error as GltfError;
 use maskerad_data_parser::data_parser_error::DataParserError;
 use lewton::VorbisError as OggError;
 use imagefmt::Error as ImageError;
+use maskerad_memory_allocators::allocation_error::AllocationError;
 
 
 #[derive(Debug)]
@@ -22,6 +23,7 @@ pub enum ResourceManagerError {
     ParsingError(String, DataParserError),
     OggError(String, OggError),
     ImageError(String, ImageError),
+    AllocationError(String, AllocationError),
 }
 
 unsafe impl Send for ResourceManagerError {}
@@ -48,6 +50,9 @@ impl fmt::Display for ResourceManagerError {
             &ResourceManagerError::ImageError(ref description, _) => {
                 write!(f, "Image error: {}", description)
             },
+            &ResourceManagerError::AllocationError(ref description, _) => {
+                write!(f, "Allocation error: {}", description)
+            },
         }
     }
 }
@@ -73,6 +78,9 @@ impl Error for ResourceManagerError {
             &ResourceManagerError::ImageError(_, _) => {
                 "ImageError"
             },
+            &ResourceManagerError::AllocationError(_, _) => {
+                "AllocationError"
+            },
         }
     }
 
@@ -95,6 +103,9 @@ impl Error for ResourceManagerError {
             },
             &ResourceManagerError::ImageError(_, ref image_error) => {
                 Some(image_error)
+            },
+            &ResourceManagerError::AllocationError(_, ref alloc_error) => {
+                Some(alloc_error)
             },
         }
     }
@@ -129,5 +140,11 @@ impl From<OggError> for ResourceManagerError {
 impl From<ImageError> for ResourceManagerError {
     fn from(error: ImageError) -> Self {
         ResourceManagerError::ImageError(format!("Error while dealing with an image structure."), error)
+    }
+}
+
+impl From<AllocationError> for ResourceManagerError {
+    fn from(error: AllocationError) -> Self {
+        ResourceManagerError::AllocationError(format!("Error while allocating something in a stack allocator."), error)
     }
 }

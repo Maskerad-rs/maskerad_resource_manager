@@ -17,13 +17,13 @@ use resources::ogg_registry::OggRegistry;
 use resources::tga_registry::TgaRegistry;
 use imagefmt::Image;
 
-pub struct ResourceRegistry {
-    gltf_registry: GltfRegistry,
-    ogg_registry: OggRegistry,
-    tga_registry: TgaRegistry,
+pub struct ResourceRegistry<'a> {
+    gltf_registry: GltfRegistry<'a>,
+    ogg_registry: OggRegistry<'a>,
+    tga_registry: TgaRegistry<'a>,
 }
 
-impl Default for ResourceRegistry {
+impl<'a> Default for ResourceRegistry<'a> {
     fn default() -> Self {
         ResourceRegistry {
             gltf_registry: GltfRegistry::default(),
@@ -33,16 +33,16 @@ impl Default for ResourceRegistry {
     }
 }
 
-impl ResourceRegistry {
+impl<'a> ResourceRegistry<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
     //____________________GLTF____________________________
-    pub fn get_gltf<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<Gltf>> {
+    pub fn get_gltf<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&Gltf> {
         match self.gltf_registry.get(path.as_ref()) {
             Some(gltf) => {
-                Ok(gltf.clone())
+                Ok(*gltf)
             },
             None => {
                 Err(ResourceManagerError::ResourceError(format!("Could not find the gltf data at path {} in the gltf registry !", path.as_ref().display())))
@@ -50,9 +50,8 @@ impl ResourceRegistry {
         }
     }
 
-    pub fn add_gltf<I, J>(&mut self, path: I, gltf_resource: J) -> Option<Rc<Gltf>> where
+    pub fn add_gltf<I>(&mut self, path: I, gltf_resource: &'a Gltf) -> Option<&Gltf> where
         I: Into<PathBuf>,
-        J: Into<Rc<Gltf>>
     {
         self.gltf_registry.insert(path, gltf_resource)
     }
@@ -71,10 +70,10 @@ impl ResourceRegistry {
 
 
     //_________________________OGG______________________
-    pub fn get_ogg<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<OggStreamReader<BufReader<File>>>> {
+    pub fn get_ogg<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&OggStreamReader<BufReader<File>>> {
         match self.ogg_registry.get(path.as_ref()) {
             Some(ogg) => {
-                Ok(ogg.clone())
+                Ok(*ogg)
             },
             None => {
                 Err(ResourceManagerError::ResourceError(format!("Could not find the ogg data at path {} in the ogg registry !", path.as_ref().display())))
@@ -82,9 +81,8 @@ impl ResourceRegistry {
         }
     }
 
-    pub fn add_ogg<I, J>(&mut self, path: I, ogg_resource: J) -> Option<Rc<OggStreamReader<BufReader<File>>>> where
+    pub fn add_ogg<I>(&mut self, path: I, ogg_resource: &'a OggStreamReader<BufReader<File>>) -> Option<&OggStreamReader<BufReader<File>>> where
         I: Into<PathBuf>,
-        J: Into<Rc<OggStreamReader<BufReader<File>>>>,
     {
         self.ogg_registry.insert(path, ogg_resource)
     }
@@ -102,10 +100,10 @@ impl ResourceRegistry {
     }
 
     //__________________________TGA_____________________
-    pub fn get_tga<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<Rc<Image<u8>>> {
+    pub fn get_tga<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&Image<u8>> {
         match self.tga_registry.get(path.as_ref()) {
             Some(tga) => {
-                Ok(tga.clone())
+                Ok(*tga)
             },
             None => {
                 Err(ResourceManagerError::ResourceError(format!("Could not find the tga data at path {} in the tga registry !", path.as_ref().display())))
@@ -113,9 +111,8 @@ impl ResourceRegistry {
         }
     }
 
-    pub fn add_tga<I, J>(&mut self, path: I, tga_resource: J) -> Option<Rc<Image<u8>>> where
+    pub fn add_tga<I>(&mut self, path: I, tga_resource: &'a Image<u8>) -> Option<&Image<u8>> where
         I: Into<PathBuf>,
-        J: Into<Rc<Image<u8>>>,
     {
         self.tga_registry.insert(path, tga_resource)
     }

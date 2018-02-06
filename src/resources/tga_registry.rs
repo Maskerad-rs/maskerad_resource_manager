@@ -10,19 +10,18 @@
 use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use imagefmt::Image;
-use std::rc::Rc;
 
 
 #[derive(Debug)]
-pub struct TgaRegistry(HashMap<PathBuf, Rc<Image<u8>>>);
+pub struct TgaRegistry<'a>(HashMap<PathBuf, &'a Image<u8>>);
 
-impl Default for TgaRegistry {
+impl<'a> Default for TgaRegistry<'a> {
     fn default() -> Self {
         TgaRegistry(HashMap::default())
     }
 }
 
-impl TgaRegistry {
+impl<'a> TgaRegistry<'a> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -31,19 +30,18 @@ impl TgaRegistry {
         self.0.is_empty()
     }
 
-    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<Image<u8>>> {
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&&Image<u8>> {
         self.0.get(path.as_ref())
     }
 
-    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<Image<u8>>> {
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<&Image<u8>> {
         self.0.remove(path.as_ref())
     }
 
-    pub fn insert<I, J>(&mut self, path: I, tga_res: J) -> Option<Rc<Image<u8>>> where
+    pub fn insert<I>(&mut self, path: I, tga_res: &'a Image<u8>) -> Option<&Image<u8>> where
         I: Into<PathBuf>,
-        J: Into<Rc<Image<u8>>>
     {
-        self.0.insert(path.into(),tga_res.into())
+        self.0.insert(path.into(),tga_res)
     }
 }
 

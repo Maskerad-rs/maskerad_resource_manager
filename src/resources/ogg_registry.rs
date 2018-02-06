@@ -10,20 +10,19 @@
 use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use lewton::inside_ogg::OggStreamReader;
-use std::rc::Rc;
 
 use std::io::BufReader;
 use std::fs::File;
 
-pub struct OggRegistry(HashMap<PathBuf, Rc<OggStreamReader<BufReader<File>>>>);
+pub struct OggRegistry<'a>(HashMap<PathBuf, &'a OggStreamReader<BufReader<File>>>);
 
-impl Default for OggRegistry {
+impl<'a> Default for OggRegistry<'a> {
     fn default() -> Self {
         OggRegistry(HashMap::default())
     }
 }
 
-impl OggRegistry {
+impl<'a> OggRegistry<'a> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -32,18 +31,17 @@ impl OggRegistry {
         self.0.is_empty()
     }
 
-    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&Rc<OggStreamReader<BufReader<File>>>> {
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&&OggStreamReader<BufReader<File>>> {
         self.0.get(path.as_ref())
     }
 
-    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<Rc<OggStreamReader<BufReader<File>>>> {
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<&OggStreamReader<BufReader<File>>> {
         self.0.remove(path.as_ref())
     }
 
-    pub fn insert<I, J>(&mut self, path: I, ogg_res: J) -> Option<Rc<OggStreamReader<BufReader<File>>>> where
+    pub fn insert<I>(&mut self, path: I, ogg_res: &'a OggStreamReader<BufReader<File>>) -> Option<&OggStreamReader<BufReader<File>>> where
         I: Into<PathBuf>,
-        J: Into<Rc<OggStreamReader<BufReader<File>>>>
     {
-        self.0.insert(path.into(),ogg_res.into())
+        self.0.insert(path.into(),ogg_res)
     }
 }

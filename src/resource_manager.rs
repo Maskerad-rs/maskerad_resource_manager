@@ -19,22 +19,26 @@ use resources::refcount_registry::RefCountRegistry;
 use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 use maskerad_memory_allocators::StackAllocator;
 
-pub struct ResourceManager {
+pub struct ResourceManager<'a> {
     //A resources registry
     //An allocators registry
     //A refcount registry
-    stack_allocator: StackAllocator,
-    resource_registry: ResourceRegistry,
+    resource_registry: ResourceRegistry<'a>,
     refcount_registry: RefCountRegistry,
 }
 
-impl ResourceManager {
-    fn with_capacity(allocator_capacity: usize, allocator_capacity_copy: usize) -> Self {
+impl<'a> Default for ResourceManager<'a> {
+    fn default() -> Self {
         ResourceManager {
-            stack_allocator: StackAllocator::with_capacity(allocator_capacity, allocator_capacity_copy),
-            refcount_registry: RefCountRegistry::new(),
-            resource_registry: ResourceRegistry::new(),
+            resource_registry: ResourceRegistry::default(),
+            refcount_registry: RefCountRegistry::default(),
         }
+    }
+}
+
+impl<'a> ResourceManager<'a> {
+    fn new() -> Self {
+        Default::default()
     }
 
     //First step.
@@ -57,8 +61,8 @@ impl ResourceManager {
         vec
     }
 
-    fn load_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
-        P: AsRef<Path> + Into<PathBuf>
+    fn load_resource<P>(&mut self, path: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
+        P: AsRef<Path> + Into<PathBuf>,
     {
         let mut reader = maskerad_filesystem::open(path.as_ref())?;
         match path.as_ref().extension() {
@@ -67,17 +71,23 @@ impl ResourceManager {
                     Some(str_ext) => {
                         match str_ext {
                             "ogg" => {
-                                let ogg_data = Rc::new(OggStreamReader::new(reader)?);
+                                let ogg_data = allocator.alloc(|| {
+                                    OggStreamReader::new(reader).unwrap()
+                                })?;
 
                                 self.resource_registry.add_ogg(path.as_ref(), ogg_data);
                             },
                             "tga" => {
-                                let tga_data = Rc::new(tga::read(&mut reader, ColFmt::Auto)?);
+                                let tga_data = allocator.alloc(|| {
+                                    tga::read(&mut reader, ColFmt::Auto).unwrap()
+                                })?;
 
                                 self.resource_registry.add_tga(path.as_ref(), tga_data);
                             },
                             "gltf" => {
-                                let gltf_data = Rc::new(Gltf::from_reader(reader)?.validate_completely()?);
+                                let gltf_data = allocator.alloc(|| {
+                                    Gltf::from_reader(reader).unwrap().validate_completely().unwrap()
+                                })?;
 
                                 self.resource_registry.add_gltf(path.as_ref(), gltf_data);
                             },
@@ -222,12 +232,12 @@ impl ResourceManager {
         Ok(())
     }
 
-    fn load_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+    fn load_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
         P: IntoIterator,
         P::Item: AsRef<Path> + Into<PathBuf>,
     {
         for resource in resource_path_iter {
-            self.load_resource(resource)?;
+            self.load_resource(resource, allocator)?;
         }
 
         Ok(())
@@ -244,7 +254,7 @@ impl ResourceManager {
         Ok(())
     }
 
-    fn load_level_resources<P>(&mut self, resource_path_iter: P) -> ResourceManagerResult<()> where
+    fn load_level_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
         P: IntoIterator + AsRef<[PathBuf]>,
         P::Item : AsRef<Path> + Into<PathBuf>,
     {
@@ -265,7 +275,7 @@ impl ResourceManager {
         self.unload_resources(resources_to_unload)?;
 
         let resources_to_load = self.resources_to_load();
-        self.load_resources(resources_to_load)?;
+        self.load_resources(resources_to_load, allocator)?;
 
         Ok(())
     }
@@ -277,7 +287,7 @@ mod resource_manager_test {
 
     #[test]
     fn resource_manager_creation() {
-        let resource_manager = ResourceManager::with_capacity(100, 50);
+        let resource_manager = ResourceManager::new();
         assert!(resource_manager.resource_registry.is_gltf_empty());
     }
 
