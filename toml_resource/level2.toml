@@ -1,5 +1,20 @@
-title = '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/level2.toml'
-gameobjects = [
-    '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject4.toml',
-    '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject5.toml',
-]
+title = "/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/level2.toml"
+
+[[gameobjects]]
+id = "/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject4.toml"
+
+[gameobjects.transform]
+position = [1.0, 2.0, 3.0]
+rotation = [0.0, 0.0, 0.0]
+scale = [2.0, 2.0, 2.0]
+
+[gameobjects.mesh]
+path = "path_test_mesh"
+
+[[gameobjects]]
+id = "/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject5.toml"
+
+[gameobjects.transform]
+position = [5.0, 7.0, 11.0]
+rotation = [0.8, 5.2, 1.0]
+scale = [2.4, 2.2, 2.9]

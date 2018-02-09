@@ -1,21 +1,9 @@
-id = '/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject4.toml'
+id = "/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject4.toml"
 
 [transform]
-position = [
-    1.0,
-    2.0,
-    3.0,
-]
-rotation = [
-    0.0,
-    0.0,
-    0.0,
-]
-scale = [
-    2.0,
-    2.0,
-    2.0,
-]
+position = [1.0, 2.0, 3.0]
+rotation = [0.0, 0.0, 0.0]
+scale = [2.0, 2.0, 2.0]
 
 [mesh]
-path = 'path_test_mesh'
+path = "path_test_mesh"

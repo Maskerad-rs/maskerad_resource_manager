@@ -29,7 +29,7 @@ lewton = "~0.7.0"
 #tga stuff
 imagefmt = "~4.0.0"
 
-# The filesystem is not on crates.io for the moment.
+log = "~0.4"
 maskerad_filesystem = { git = "https://github.com/Maskerad-rs/maskerad_filesystem" }
 maskerad_data_parser = { git = "https://github.com/Maskerad-rs/maskerad_level_parser"}
 maskerad_gameobject_model = { git = "https://github.com/Maskerad-rs/maskerad_gameobject_model" }

@@ -7,12 +7,14 @@
 
 extern crate maskerad_object_pool;
 extern crate maskerad_memory_allocators;
-extern crate maskerad_filesystem;
 extern crate maskerad_data_parser;
 extern crate maskerad_gameobject_model;
 extern crate gltf;
 extern crate lewton;
 extern crate imagefmt;
+#[macro_use]
+extern crate log;
+extern crate maskerad_filesystem;
 
 pub mod resources;
 pub mod properties;

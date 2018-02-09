@@ -12,12 +12,14 @@ use std::rc::Rc;
 use imagefmt::tga;
 use imagefmt::ColFmt;
 use std::collections::hash_map::Iter;
-use maskerad_filesystem::filesystem as maskerad_filesystem;
 use maskerad_data_parser::level_description::LevelDescription;
 use resources::resources_registry::ResourceRegistry;
 use resources::refcount_registry::RefCountRegistry;
 use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
 use maskerad_memory_allocators::StackAllocator;
+use maskerad_filesystem::filesystem::Filesystem;
+
+//TODO: We must get rid of the filesystem dependency injection, and rework the shit out of this goddamn resource manager.
 
 pub struct ResourceManager<'a> {
     //A resources registry
@@ -29,6 +31,7 @@ pub struct ResourceManager<'a> {
 
 impl<'a> Default for ResourceManager<'a> {
     fn default() -> Self {
+        debug!("Creating a default ResourceManager.");
         ResourceManager {
             resource_registry: ResourceRegistry::default(),
             refcount_registry: RefCountRegistry::default(),
@@ -45,6 +48,7 @@ impl<'a> ResourceManager<'a> {
     fn read_needed_resources<I>(&self, level: I) -> Vec<String> where
         I: AsRef<LevelDescription>,
     {
+        debug!("Reading all the resource needed for a level.");
         let mut vec: Vec<String> = Vec::new();
 
         //TODO: mesh
@@ -61,10 +65,12 @@ impl<'a> ResourceManager<'a> {
         vec
     }
 
-    fn load_resource<P>(&mut self, path: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
+    fn load_resource<P>(&mut self, path: P, allocator: &'a StackAllocator, filesystem: &Filesystem) -> ResourceManagerResult<()> where
         P: AsRef<Path> + Into<PathBuf>,
     {
-        let mut reader = maskerad_filesystem::open(path.as_ref())?;
+        debug!("Loading resource at path {} in the resource manager.", path.as_ref().display());
+
+        let mut reader = filesystem.open(path.as_ref())?;
         match path.as_ref().extension() {
             Some(osstr_ext) => {
                 match osstr_ext.to_str() {
@@ -111,6 +117,7 @@ impl<'a> ResourceManager<'a> {
     fn unload_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
         P: AsRef<Path>
     {
+        debug!("Unloading resource at path {} from the resource manager.", path.as_ref().display());
         match path.as_ref().extension() {
             Some(osstr_ext) => {
                 match osstr_ext.to_str() {
@@ -145,6 +152,7 @@ impl<'a> ResourceManager<'a> {
     fn increment_refcount_resource<P>(&mut self, path: P) -> ResourceManagerResult<Option<PathBuf>> where
         P: AsRef<Path> + Into<PathBuf>
     {
+        debug!("Incrementing the reference count of the resource at path {}", path.as_ref().display());
         let mut new_path = None;
 
         if !self.refcount_registry.has_refcount(path.as_ref()) {
@@ -161,17 +169,20 @@ impl<'a> ResourceManager<'a> {
     fn decrement_refcount_resource<P>(&mut self, path: P) -> ResourceManagerResult<()> where
         P: AsRef<Path>
     {
+        debug!("Decrementing the reference count of the resource at path {}", path.as_ref().display());
         self.refcount_registry.decrement_refcount_of(path.as_ref())?;
         Ok(())
     }
 
     fn refcounts(&self) -> Iter<PathBuf, u8> {
+        debug!("Getting an iterator of the refcount registry.");
         self.refcount_registry.iter()
     }
 
     fn resources_to_decrease<P>(&self, new_resource_slice: P) -> Vec<PathBuf> where
         P: AsRef<[PathBuf]>,
     {
+        debug!("Getting paths to resources which must have their reference count decreased.");
         self.refcounts()
             .filter(|elem| {
                 !new_resource_slice.as_ref().contains(elem.0)
@@ -184,6 +195,7 @@ impl<'a> ResourceManager<'a> {
     }
 
     fn resources_to_unload(&self) -> Vec<PathBuf> {
+        debug!("Getting paths to resources which must be unloaded.");
         self.refcounts()
             .filter(|elem| {
                 (*elem.1) == 0
@@ -196,6 +208,7 @@ impl<'a> ResourceManager<'a> {
     }
 
     fn resources_to_load(&self) -> Vec<PathBuf> {
+        debug!("Getting paths to resources which must be loaded.");
         self.refcounts()
             .filter(|elem| {
                 (*elem.1) == 1
@@ -211,6 +224,7 @@ impl<'a> ResourceManager<'a> {
         P: IntoIterator,
         P::Item: AsRef<Path> + Into<PathBuf>,
     {
+        debug!("Incrementing the reference count of multiple resources.");
         let mut new_resources = Vec::new();
         for path in resource_path_iter {
             if let Some(new_resource_path) = self.increment_refcount_resource(path)? {
@@ -225,6 +239,7 @@ impl<'a> ResourceManager<'a> {
         P: IntoIterator,
         P::Item: AsRef<Path> + Into<PathBuf>,
     {
+        debug!("Decrementing the reference count of multiple resources.");
         for resource in resource_path_iter {
             self.decrement_refcount_resource(resource)?;
         }
@@ -232,12 +247,13 @@ impl<'a> ResourceManager<'a> {
         Ok(())
     }
 
-    fn load_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
+    fn load_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator, filesystem: &Filesystem) -> ResourceManagerResult<()> where
         P: IntoIterator,
         P::Item: AsRef<Path> + Into<PathBuf>,
     {
+        debug!("Loading multiple resources.");
         for resource in resource_path_iter {
-            self.load_resource(resource, allocator)?;
+            self.load_resource(resource, allocator, filesystem)?;
         }
 
         Ok(())
@@ -247,6 +263,7 @@ impl<'a> ResourceManager<'a> {
         P: IntoIterator,
         P::Item: AsRef<Path>,
     {
+        debug!("Unloading multiple resources.");
         for resource in resource_path_iter {
             self.unload_resource(resource)?;
         }
@@ -254,10 +271,11 @@ impl<'a> ResourceManager<'a> {
         Ok(())
     }
 
-    fn load_level_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator) -> ResourceManagerResult<()> where
+    fn load_level_resources<P>(&mut self, resource_path_iter: P, allocator: &'a StackAllocator, filesystem: &Filesystem) -> ResourceManagerResult<()> where
         P: IntoIterator + AsRef<[PathBuf]>,
         P::Item : AsRef<Path> + Into<PathBuf>,
     {
+        debug!("Reading all the resources needed by a level to load/unload/increment/decrement all the resources.");
         /*
         When loading level :
         1 - read all needed resources.
@@ -275,7 +293,7 @@ impl<'a> ResourceManager<'a> {
         self.unload_resources(resources_to_unload)?;
 
         let resources_to_load = self.resources_to_load();
-        self.load_resources(resources_to_load, allocator)?;
+        self.load_resources(resources_to_load, allocator, filesystem)?;
 
         Ok(())
     }
