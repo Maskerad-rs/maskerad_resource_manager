@@ -221,7 +221,7 @@ impl<'a> ResourceManager<'a> {
 #[cfg(test)]
 mod resource_manager_test {
     use super::*;
-
+    use maskerad_filesystem::game_directories::RootDir;
     #[test]
     fn resource_manager_creation() {
         let resource_manager = ResourceManager::with_capacity(100, 100);
@@ -240,21 +240,21 @@ mod resource_manager_test {
         let resource_man = ResourceManager::with_capacity(10000000, 10000000); //10 mb
 
         //Load tga
-        let tga_path = PathBuf::from("/home/malkaviel/Documents/projects/intellij/maskerad_resource_manager/tga_resource/Untitled.tga");
+        let tga_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "tga_resource/Untitled.tga").unwrap();
         let mut tga_reader = fs.open(tga_path.as_path()).unwrap();
         resource_man.load_tga(tga_path.as_path(), &mut tga_reader).unwrap();
         assert!(!resource_man.level_resource_registry.borrow().is_tga_empty());
         assert!(resource_man.level_resource_registry().get_tga(tga_path.as_path()).is_ok());
 
         //Load gltf
-        let gltf_path = PathBuf::from("/home/malkaviel/Documents/projects/intellij/maskerad_resource_manager/gltf_resource/untitled.gltf");
+        let gltf_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "gltf_resource/untitled.gltf").unwrap();
         let mut gltf_reader = fs.open(gltf_path.as_path()).unwrap();
         resource_man.load_gltf(gltf_path.as_path(), &mut gltf_reader).unwrap();
         assert!(!resource_man.level_resource_registry.borrow().is_gltf_empty());
         assert!(resource_man.level_resource_registry().get_gltf(gltf_path.as_path()).is_ok());
 
         //Load ogg
-        let ogg_path = PathBuf::from("/home/malkaviel/Documents/projects/intellij/maskerad_resource_manager/ogg_resource/untitled.ogg");
+        let ogg_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "ogg_resource/untitled.ogg").unwrap();
         let mut ogg_reader = fs.open(ogg_path.as_path()).unwrap();
         resource_man.load_ogg(ogg_path.as_path(), ogg_reader).unwrap();
         assert!(!resource_man.level_resource_registry.borrow().is_ogg_empty());
