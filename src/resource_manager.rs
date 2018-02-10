@@ -48,26 +48,32 @@ impl<'a> ResourceManager<'a> {
     }
 
     pub fn set_marker_global_resources(&mut self, marker: usize) {
+        debug!("Setting the marker to the end of the global resources.");
         self.marker_global_resource = marker;
     }
 
     pub fn marker_global_resources(&self) -> usize {
+        debug!("Getting the marker to the end of the global resources.");
         self.marker_global_resource
     }
 
     pub fn set_marker_global_resources_copy(&mut self, marker: usize) {
+        debug!("Setting the marker to the end of the global resources (copy).");
         self.marker_global_resource_copy = marker;
     }
 
     pub fn marker_global_resources_copy(&self) -> usize {
+        debug!("Getting the marker to the end of the global resources (copy).");
         self.marker_global_resource_copy
     }
 
     pub fn level_resource_registry(&self) -> Ref<ResourceRegistry> {
+        debug!("Borrowing an immutable reference to the level resource registry.");
         self.level_resource_registry.borrow()
     }
 
     pub fn global_resource_registry(&self) -> Ref<ResourceRegistry> {
+        debug!("Borrowing an immutable reference to the global resource registry.");
         self.global_resource_registry.borrow()
     }
 
@@ -162,6 +168,7 @@ impl<'a> ResourceManager<'a> {
 
     //TODO: needed ?
     fn unload_temporary_data(&self) {
+        debug!("Unloading temporary data.");
         self.double_ended_allocator.1.reset();
         self.double_ended_allocator.1.reset_copy();
     }
@@ -236,27 +243,27 @@ mod resource_manager_test {
     #[test]
     fn resource_manager_load_unload_get_resource() {
         //Filesystem, StackAlloc, ResourceManager.
-        let fs = Filesystem::new("test_resource_man", "Malkaviel").unwrap();
+        let fs = Filesystem::new("test_resource_man", "Malkaviel").expect("Could not create fs.");
         let resource_man = ResourceManager::with_capacity(10000000, 10000000); //10 mb
 
         //Load tga
-        let tga_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "tga_resource/Untitled.tga").unwrap();
-        let mut tga_reader = fs.open(tga_path.as_path()).unwrap();
-        resource_man.load_tga(tga_path.as_path(), &mut tga_reader).unwrap();
+        let tga_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "tga_resource/Untitled.tga").expect("Could not create tga path.");
+        let mut tga_reader = fs.open(tga_path.as_path()).expect("Could not creater tga reader.");
+        resource_man.load_tga(tga_path.as_path(), &mut tga_reader).expect("Could not load tga image.");
         assert!(!resource_man.level_resource_registry.borrow().is_tga_empty());
         assert!(resource_man.level_resource_registry().get_tga(tga_path.as_path()).is_ok());
 
         //Load gltf
-        let gltf_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "gltf_resource/untitled.gltf").unwrap();
-        let mut gltf_reader = fs.open(gltf_path.as_path()).unwrap();
-        resource_man.load_gltf(gltf_path.as_path(), &mut gltf_reader).unwrap();
+        let gltf_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "gltf_resource/untitled.gltf").expect("Could not create gltf path.");
+        let mut gltf_reader = fs.open(gltf_path.as_path()).expect("Could not create gltf reader.");
+        resource_man.load_gltf(gltf_path.as_path(), &mut gltf_reader).expect("Could not load gltf data.");
         assert!(!resource_man.level_resource_registry.borrow().is_gltf_empty());
         assert!(resource_man.level_resource_registry().get_gltf(gltf_path.as_path()).is_ok());
 
         //Load ogg
-        let ogg_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "ogg_resource/untitled.ogg").unwrap();
-        let mut ogg_reader = fs.open(ogg_path.as_path()).unwrap();
-        resource_man.load_ogg(ogg_path.as_path(), ogg_reader).unwrap();
+        let ogg_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "ogg_resource/untitled.ogg").expect("Could not create ogg path.");
+        let mut ogg_reader = fs.open(ogg_path.as_path()).expect("Could not create ogg reader.");
+        resource_man.load_ogg(ogg_path.as_path(), ogg_reader).expect("Could not load ogg data.");
         assert!(!resource_man.level_resource_registry.borrow().is_ogg_empty());
         assert!(resource_man.level_resource_registry().get_ogg(ogg_path.as_path()).is_ok());
         //unload
@@ -269,10 +276,10 @@ mod resource_manager_test {
         assert!(resource_man.global_resource_registry.borrow().is_gltf_empty());
 
         //Load level.
-        let level_path = PathBuf::from("/home/malkaviel/Documents/projects/intellij/maskerad_resource_manager/toml_resource/level2.toml");
-        let mut level_reader = fs.open(level_path.as_path()).unwrap();
-        let level_desc = LevelDescription::load_from_toml(&mut level_reader).unwrap();
-        resource_man.load_level_resources(&level_desc, &fs);
+        let level_path = fs.construct_path_from_root(RootDir::WorkingDirectory, "toml_resource/level2.toml").expect("Could not create level path.");
+        let mut level_reader = fs.open(level_path.as_path()).expect("Could not create level reader.");
+        let level_desc = LevelDescription::load_from_toml(&mut level_reader).expect("Could not create level description.");
+        resource_man.load_level_resources(&level_desc, &fs).expect("Could not load all level resources");
         assert!(resource_man.level_resource_registry.borrow().is_tga_empty());
         assert!(resource_man.level_resource_registry.borrow().is_ogg_empty());
         assert!(!resource_man.level_resource_registry.borrow().is_gltf_empty());
