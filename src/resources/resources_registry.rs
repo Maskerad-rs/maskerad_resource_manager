@@ -5,21 +5,20 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
-use resources::gltf_registry::GltfRegistry;
+
+
+use resources::gltf_registry::{GltfRegistry, GltfResource};
 use std::path::{Path, PathBuf};
 use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
-use std::rc::Rc;
-use gltf::Gltf;
-use lewton::inside_ogg::OggStreamReader;
 use std::io::BufReader;
 use std::fs::File;
-use resources::ogg_registry::OggRegistry;
-use resources::tga_registry::TgaRegistry;
-use imagefmt::Image;
+use resources::ogg_registry::{OggRegistry, OggResource};
+use resources::tga_registry::{TgaRegistry, TgaResource};
+use std::collections::hash_map::Iter;
 
 pub struct ResourceRegistry<'a> {
     gltf_registry: GltfRegistry<'a>,
-    ogg_registry: OggRegistry<'a>,
+    ogg_registry: OggRegistry<'a, BufReader<File>>,
     tga_registry: TgaRegistry<'a>,
 }
 
@@ -40,12 +39,12 @@ impl<'a> ResourceRegistry<'a> {
     }
 
     //____________________GLTF____________________________
-    pub fn get_gltf<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&Gltf> {
+    pub fn get_gltf<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&&GltfResource> {
         debug!("Trying to get a gltf resource with path {}.", path.as_ref().display());
         match self.gltf_registry.get(path.as_ref()) {
             Some(gltf) => {
                 trace!("The gltf resource has been found.");
-                Ok(*gltf)
+                Ok(gltf)
             },
             None => {
                 error!("The gltf resource could not be found.");
@@ -54,7 +53,7 @@ impl<'a> ResourceRegistry<'a> {
         }
     }
 
-    pub fn add_gltf<I>(&mut self, path: I, gltf_resource: &'a Gltf) -> Option<&Gltf> where
+    pub fn add_gltf<I>(&mut self, path: I, gltf_resource: &'a GltfResource) -> Option<&GltfResource> where
         I: Into<PathBuf>,
     {
         debug!("Adding a gltf resource.");
@@ -78,12 +77,12 @@ impl<'a> ResourceRegistry<'a> {
 
 
     //_________________________OGG______________________
-    pub fn get_ogg<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&OggStreamReader<BufReader<File>>> {
+    pub fn get_ogg<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&&OggResource<BufReader<File>>> {
         debug!("Trying to get a ogg resource with path {}.", path.as_ref().display());
         match self.ogg_registry.get(path.as_ref()) {
             Some(ogg) => {
                 trace!("The ogg resource has been found.");
-                Ok(*ogg)
+                Ok(ogg)
             },
             None => {
                 error!("The ogg resource could not be found.");
@@ -92,7 +91,7 @@ impl<'a> ResourceRegistry<'a> {
         }
     }
 
-    pub fn add_ogg<I>(&mut self, path: I, ogg_resource: &'a OggStreamReader<BufReader<File>>) -> Option<&OggStreamReader<BufReader<File>>> where
+    pub fn add_ogg<I>(&mut self, path: I, ogg_resource: &'a OggResource<BufReader<File>>) -> Option<&OggResource<BufReader<File>>> where
         I: Into<PathBuf>,
     {
         debug!("Adding an ogg resource.");
@@ -115,12 +114,12 @@ impl<'a> ResourceRegistry<'a> {
     }
 
     //__________________________TGA_____________________
-    pub fn get_tga<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&Image<u8>> {
+    pub fn get_tga<I: AsRef<Path>>(&self, path: I) -> ResourceManagerResult<&&TgaResource> {
         debug!("Trying to get a tga resource with path {}.", path.as_ref().display());
         match self.tga_registry.get(path.as_ref()) {
             Some(tga) => {
                 trace!("The tga resource has been found.");
-                Ok(*tga)
+                Ok(tga)
             },
             None => {
                 error!("The tga resource could not be found.");
@@ -129,7 +128,7 @@ impl<'a> ResourceRegistry<'a> {
         }
     }
 
-    pub fn add_tga<I>(&mut self, path: I, tga_resource: &'a Image<u8>) -> Option<&Image<u8>> where
+    pub fn add_tga<I>(&mut self, path: I, tga_resource: &'a TgaResource) -> Option<&TgaResource> where
         I: Into<PathBuf>,
     {
         debug!("Adding a tga resource.");
@@ -149,5 +148,12 @@ impl<'a> ResourceRegistry<'a> {
     pub fn is_tga_empty(&self) -> bool {
         debug!("Checking if the ResourceManager is empty of tga resources.");
         self.tga_registry.is_empty()
+    }
+
+    pub fn clear(&mut self) {
+        debug!("Clearing the resource registry.");
+        self.tga_registry.clear();
+        self.ogg_registry.clear();
+        self.gltf_registry.clear();
     }
 }

@@ -9,7 +9,7 @@ rotation = [0.0, 0.0, 0.0]
 scale = [2.0, 2.0, 2.0]
 
 [gameobjects.mesh]
-path = "path_test_mesh"
+path = "/home/malkaviel/Documents/projects/intellij/maskerad_resource_manager/gltf_resource/untitled.gltf"
 
 [[gameobjects]]
 id = "/home/malkaviel/Documents/projects/intellij/maskerad_level_parser/data_serialization_test/gameobject5.toml"

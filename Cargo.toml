@@ -20,16 +20,16 @@ is-it-maintained-open-issues = { repository = "Maskerad-rs/maskerad_resource_man
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-maskerad_memory_allocators = "~5.0.0"
-maskerad_object_pool = "~0.2.0"
+maskerad_memory_allocators = "~5"
+maskerad_object_pool = "~0"
 #gltf stuff
-gltf = "~0.9.0"
+gltf = "~0"
 #ogg stuff
-lewton = "~0.7.0"
+lewton = "~0"
 #tga stuff
-imagefmt = "~4.0.0"
+imagefmt = "~4"
 
-log = "~0.4"
+log = "~0"
 maskerad_filesystem = { git = "https://github.com/Maskerad-rs/maskerad_filesystem" }
 maskerad_data_parser = { git = "https://github.com/Maskerad-rs/maskerad_level_parser"}
 maskerad_gameobject_model = { git = "https://github.com/Maskerad-rs/maskerad_gameobject_model" }

@@ -5,6 +5,8 @@
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 
+/*
+
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use resources::resource_manager_errors::{ResourceManagerError, ResourceManagerResult};
@@ -87,3 +89,5 @@ impl RefCountRegistry {
         self.0.keys()
     }
 }
+
+*/

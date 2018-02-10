@@ -10,20 +10,38 @@
 use std::collections::HashMap;
 use std::path::{PathBuf, Path};
 use lewton::inside_ogg::OggStreamReader;
+use std::io::{Read, Seek};
 
-use std::io::BufReader;
-use std::fs::File;
+pub struct OggResource<R: Read + Seek>(OggStreamReader<R>);
 
-pub struct OggRegistry<'a>(HashMap<PathBuf, &'a OggStreamReader<BufReader<File>>>);
+impl<R: Read + Seek> From<OggStreamReader<R>> for OggResource<R> {
+    fn from(ogg: OggStreamReader<R>) -> Self {
+        OggResource(ogg)
+    }
+}
 
-impl<'a> Default for OggRegistry<'a> {
+impl<R: Read + Seek> AsRef<OggResource<R>> for OggResource<R> {
+    fn as_ref(&self) -> &OggResource<R> {
+        self
+    }
+}
+
+impl<R: Read + Seek> AsRef<OggStreamReader<R>> for OggResource<R> {
+    fn as_ref(&self) -> &OggStreamReader<R> {
+        &self.0
+    }
+}
+
+pub struct OggRegistry<'a, R: 'a + Read + Seek>(HashMap<PathBuf, &'a OggResource<R>>);
+
+impl<'a, R: Read + Seek> Default for OggRegistry<'a, R> {
     fn default() -> Self {
         debug!("Creating a default OggRegistry.");
         OggRegistry(HashMap::default())
     }
 }
 
-impl<'a> OggRegistry<'a> {
+impl<'a, R: Read + Seek> OggRegistry<'a, R> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -33,20 +51,25 @@ impl<'a> OggRegistry<'a> {
         self.0.is_empty()
     }
 
-    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&&OggStreamReader<BufReader<File>>> {
+    pub fn get<I: AsRef<Path>>(&self, path: I) -> Option<&&OggResource<R>> {
         debug!("Trying to get an ogg resource with path {}", path.as_ref().display());
         self.0.get(path.as_ref())
     }
 
-    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<&OggStreamReader<BufReader<File>>> {
+    pub fn remove<I: AsRef<Path>>(&mut self, path: I) -> Option<&OggResource<R>> {
         debug!("Removing ogg resource with path {}", path.as_ref().display());
         self.0.remove(path.as_ref())
     }
 
-    pub fn insert<I>(&mut self, path: I, ogg_res: &'a OggStreamReader<BufReader<File>>) -> Option<&OggStreamReader<BufReader<File>>> where
+    pub fn insert<I>(&mut self, path: I, ogg_res: &'a OggResource<R>) -> Option<&OggResource<R>> where
         I: Into<PathBuf>,
     {
         debug!("Inserting an ogg resource into the OggRegistry.");
         self.0.insert(path.into(),ogg_res)
+    }
+
+    pub fn clear(&mut self) {
+        debug!("Clearing the ogg registry.");
+        self.0.clear();
     }
 }
